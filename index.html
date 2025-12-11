@@ -5,8 +5,155 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Bude Peyek - Peyek Renyah Khas Nusantara dengan Berbagai Varian Rasa">
     <title>Bude Peyek - Peyek Renyah Khas Nusantara</title>
-    <link rel="stylesheet" href="style.css?v=10">
+    <link rel="stylesheet" href="style.css?v=5">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- INLINE CSS OVERRIDE - FORCE UPDATE -->
+    <style>
+        .produk-grid {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+            gap: 2rem !important;
+            margin-top: 2.5rem !important;
+        }
+        
+        .produk-card {
+            background-color: #ffffff !important;
+            border-radius: 1.5rem !important;
+            overflow: hidden !important;
+            box-shadow: 0 10px 30px rgba(248, 113, 22, 0.1) !important;
+            border: 1px solid rgba(248, 187, 107, 0.2) !important;
+            transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        
+        .produk-card:hover {
+            transform: translateY(-8px) !important;
+            box-shadow: 0 20px 50px rgba(248, 113, 22, 0.2) !important;
+            border-color: rgba(248, 113, 22, 0.4) !important;
+        }
+        
+        .produk-image {
+            width: 100% !important;
+            height: 220px !important;
+            background: linear-gradient(135deg, #f97316 0%, #fb923c 100%) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            position: relative !important;
+        }
+        
+        .produk-image i {
+            font-size: 5rem !important;
+            color: rgba(255, 255, 255, 0.95) !important;
+            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.2)) !important;
+            z-index: 1 !important;
+        }
+        
+        .produk-image-photo {
+            width: 100% !important;
+            height: 220px !important;
+            overflow: hidden !important;
+            background-color: #f3f4f6 !important;
+        }
+        
+        .produk-image-photo img {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            transition: transform 0.4s ease !important;
+        }
+        
+        .produk-card:hover .produk-image-photo img {
+            transform: scale(1.15) !important;
+        }
+        
+        .produk-badge {
+            position: absolute !important;
+            top: 1rem !important;
+            right: 1rem !important;
+            font-size: 0.7rem !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%) !important;
+            color: #ffffff !important;
+            padding: 0.35rem 0.75rem !important;
+            border-radius: 999px !important;
+            z-index: 10 !important;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4) !important;
+        }
+        
+        .produk h3 {
+            font-size: 1.25rem !important;
+            margin: 1.25rem 1.5rem 0.5rem !important;
+            color: #1f2937 !important;
+            font-weight: 700 !important;
+        }
+        
+        .produk p {
+            font-size: 0.875rem !important;
+            color: #6b7280 !important;
+            padding: 0 1.5rem !important;
+            margin-bottom: 1rem !important;
+        }
+        
+        .produk-price {
+            display: flex !important;
+            align-items: baseline !important;
+            gap: 0.5rem !important;
+            padding: 1rem 1.5rem 1.5rem !important;
+            border-top: 2px solid #f9fafb !important;
+            margin-top: auto !important;
+        }
+        
+        .price {
+            font-size: 1.5rem !important;
+            font-weight: 700 !important;
+            color: #f97316 !important;
+        }
+        
+        .unit {
+            font-size: 0.875rem !important;
+            color: #9ca3af !important;
+        }
+        
+        .stock-warning {
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
+            margin: 0.75rem 1.5rem 1rem !important;
+            padding: 0.5rem 0.75rem !important;
+            background: linear-gradient(135deg, #fef3c7, #fde68a) !important;
+            border-left: 3px solid #f59e0b !important;
+            border-radius: 0.5rem !important;
+            font-size: 0.75rem !important;
+            color: #92400e !important;
+            font-weight: 600 !important;
+        }
+        
+        @media (max-width: 768px) {
+            .produk-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 1.25rem !important;
+            }
+            .produk-image, .produk-image-photo {
+                height: 180px !important;
+            }
+            .produk-image i {
+                font-size: 4rem !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .produk-grid {
+                grid-template-columns: 1fr !important;
+            }
+            .produk-image, .produk-image-photo {
+                height: 200px !important;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Navigation -->
