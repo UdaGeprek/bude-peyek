@@ -6,22 +6,25 @@ if (!sessionStorage.getItem('adminLoggedIn')) {
 }
 
 // Wait for Supabase client to be ready
-if (!window.supabaseClient) {
-    alert('Supabase belum terhubung! Pastikan supabase-config.js sudah di-load.');
-}
+function initAdmin() {
+    if (!window.supabaseClient) {
+        console.log('⏳ Waiting for Supabase client...');
+        setTimeout(initAdmin, 100);
+        return;
+    }
 
+    console.log('✅ Supabase client ready, initializing admin...');
+    
+    // Gunakan window.supabaseClient langsung (JANGAN deklarasi ulang)
+    const supabase = window.supabaseClient;
 
-// State variables
-let products = [];
-let orders = [];
-let currentProductId = null;
+    // State variables
+    let products = [];
+    let orders = [];
+    let currentProductId = null;
 
-// Initialize - Load data from Supabase
-async function initializeAdmin() {
-    await loadProductsFromDB();
-    await loadOrdersFromDB();
-    loadDashboard();
-}
+    // Initialize - Load data from Supabase
+    async function initializeAdmin() {
 
 // ==================== PRODUCTS ====================
 
