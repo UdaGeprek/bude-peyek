@@ -9,16 +9,15 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-    /* FORCE OVERRIDE PRODUK STYLING */
     .produk-grid {
         display: grid !important;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
         gap: 2rem !important;
         margin-top: 2.5rem !important;
     }
     
     .produk-card {
-        background-color: #ffffff !important;
+        background: #fff !important;
         border-radius: 1.5rem !important;
         overflow: hidden !important;
         box-shadow: 0 10px 30px rgba(248, 113, 22, 0.1) !important;
@@ -32,91 +31,60 @@
     .produk-card:hover {
         transform: translateY(-8px) !important;
         box-shadow: 0 20px 50px rgba(248, 113, 22, 0.2) !important;
-        border-color: rgba(248, 113, 22, 0.4) !important;
     }
     
     .produk-image {
         width: 100% !important;
-        height: 220px !important;
-        background: linear-gradient(135deg, #f97316 0%, #fb923c 100%) !important;
+        height: 200px !important;
+        background: linear-gradient(135deg, #f97316, #fb923c) !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        position: relative !important;
-        overflow: hidden !important;
     }
     
     .produk-image i {
-        font-size: 5rem !important;
-        color: rgba(255, 255, 255, 0.95) !important;
-        filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.2)) !important;
-        z-index: 1 !important;
-    }
-    
-    .produk-image-photo {
-        width: 100% !important;
-        height: 220px !important;
-        overflow: hidden !important;
-        background-color: #f3f4f6 !important;
-        position: relative !important;
-    }
-    
-    .produk-image-photo img {
-        width: 100% !important;
-        height: 100% !important;
-        object-fit: cover !important;
-        object-position: center !important;
-        transition: transform 0.4s ease !important;
-    }
-    
-    .produk-card:hover .produk-image-photo img {
-        transform: scale(1.15) !important;
+        font-size: 4.5rem !important;
+        color: rgba(255,255,255,0.95) !important;
+        filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2)) !important;
     }
     
     .produk-badge {
         position: absolute !important;
         top: 1rem !important;
         right: 1rem !important;
-        font-size: 0.7rem !important;
-        font-weight: 700 !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.05em !important;
-        background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%) !important;
-        color: #ffffff !important;
+        background: linear-gradient(135deg, #dc2626, #ef4444) !important;
+        color: #fff !important;
         padding: 0.35rem 0.75rem !important;
         border-radius: 999px !important;
+        font-size: 0.7rem !important;
+        font-weight: 700 !important;
         z-index: 10 !important;
-        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4) !important;
     }
     
     .produk-card h3 {
         font-size: 1.25rem !important;
-        margin: 1.25rem 1.5rem 0.5rem !important;
-        color: #1f2937 !important;
+        margin: 1rem 1.5rem 0.5rem !important;
         font-weight: 700 !important;
-        padding: 0 !important;
     }
     
     .produk-card > p {
         font-size: 0.875rem !important;
         color: #6b7280 !important;
-        line-height: 1.6 !important;
         padding: 0 1.5rem !important;
         margin-bottom: 1rem !important;
-        flex-grow: 1 !important;
     }
     
     .produk-price {
         display: flex !important;
         align-items: baseline !important;
         gap: 0.5rem !important;
-        padding: 1rem 1.5rem 1.5rem !important;
+        padding: 1rem 1.5rem !important;
         border-top: 2px solid #f9fafb !important;
         margin-top: auto !important;
     }
     
     .produk-price .price {
-        font-size: 1.5rem !important;
+        font-size: 1.4rem !important;
         font-weight: 700 !important;
         color: #f97316 !important;
     }
@@ -124,86 +92,20 @@
     .produk-price .unit {
         font-size: 0.875rem !important;
         color: #9ca3af !important;
-        font-weight: 500 !important;
     }
     
     .stock-warning {
         display: flex !important;
         align-items: center !important;
         gap: 0.5rem !important;
-        margin: 0.75rem 1.5rem 1rem !important;
-        padding: 0.5rem 0.75rem !important;
+        margin: 0.5rem 1.5rem 1rem !important;
+        padding: 0.5rem !important;
         background: linear-gradient(135deg, #fef3c7, #fde68a) !important;
         border-left: 3px solid #f59e0b !important;
         border-radius: 0.5rem !important;
         font-size: 0.75rem !important;
         color: #92400e !important;
         font-weight: 600 !important;
-    }
-    
-    .stock-warning i {
-        color: #f59e0b !important;
-        font-size: 0.875rem !important;
-    }
-    
-    .loading-state, .empty-state {
-        grid-column: 1 / -1 !important;
-        text-align: center !important;
-        padding: 4rem 2rem !important;
-        color: #9ca3af !important;
-    }
-    
-    .loading-state i {
-        font-size: 3rem !important;
-        margin-bottom: 1rem !important;
-        color: #f97316 !important;
-        animation: spin 1s linear infinite !important;
-    }
-    
-    @keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-    }
-    
-    .empty-state i {
-        font-size: 4rem !important;
-        margin-bottom: 1rem !important;
-        color: #d1d5db !important;
-    }
-    
-    .loading-state p, .empty-state p {
-        font-size: 1.125rem !important;
-        color: #6b7280 !important;
-        margin-top: 0.5rem !important;
-    }
-    
-    @media (max-width: 1024px) {
-        .produk-grid {
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important;
-            gap: 1.5rem !important;
-        }
-    }
-    
-    @media (max-width: 768px) {
-        .produk-grid {
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 1.25rem !important;
-        }
-        .produk-image, .produk-image-photo {
-            height: 180px !important;
-        }
-        .produk-image i {
-            font-size: 4rem !important;
-        }
-    }
-    
-    @media (max-width: 480px) {
-        .produk-grid {
-            grid-template-columns: 1fr !important;
-        }
-        .produk-image, .produk-image-photo {
-            height: 200px !important;
-        }
     }
     </style>
 </head>
@@ -287,9 +189,10 @@
             <h2 class="section-title">Daftar Produk & Harga</h2>
             <p class="section-subtitle">Berbagai pilihan peyek dengan kualitas terbaik</p>
             
-            <div class="produk-grid">
-                <div class="loading-state">
-                    <i class="fas fa-spinner fa-spin"></i>
+            <!-- GRID PRODUK - PASTIKAN INI ADA -->
+            <div class="produk-grid" id="productGrid">
+                <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: #f97316;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 3rem; margin-bottom: 1rem;"></i>
                     <p>Memuat produk...</p>
                 </div>
             </div>
@@ -319,7 +222,6 @@
                     <h3>Pilih Produk</h3>
                     <p>Pilih produk peyek favorit Anda dan tentukan jumlah yang diinginkan melalui formulir pemesanan</p>
                 </div>
-
                 <div class="step-item">
                     <div class="step-number">2</div>
                     <div class="step-icon">
@@ -328,7 +230,6 @@
                     <h3>Isi Formulir</h3>
                     <p>Lengkapi data pemesanan dengan informasi kontak dan alamat pengiriman yang benar</p>
                 </div>
-
                 <div class="step-item">
                     <div class="step-number">3</div>
                     <div class="step-icon">
@@ -371,23 +272,19 @@
                         <label for="nama"><i class="fas fa-user"></i> Nama Lengkap *</label>
                         <input type="text" id="nama" name="nama" required placeholder="Masukkan nama lengkap">
                     </div>
-
                     <div class="form-group">
                         <label for="telepon"><i class="fas fa-phone"></i> No. Telepon / WhatsApp *</label>
                         <input type="tel" id="telepon" name="telepon" required placeholder="08xxxxxxxxxx">
                     </div>
                 </div>
-
                 <div class="form-group">
                     <label for="email"><i class="fas fa-envelope"></i> Email</label>
                     <input type="email" id="email" name="email" placeholder="email@contoh.com">
                 </div>
-
                 <div class="form-group">
                     <label for="alamat"><i class="fas fa-map-marker-alt"></i> Alamat Lengkap *</label>
                     <textarea id="alamat" name="alamat" rows="3" required placeholder="Masukkan alamat lengkap untuk pengiriman"></textarea>
                 </div>
-
                 <div class="form-row">
                     <div class="form-group">
                         <label for="produk"><i class="fas fa-box"></i> Pilih Produk *</label>
@@ -395,18 +292,15 @@
                             <option value="">-- Pilih Produk --</option>
                         </select>
                     </div>
-
                     <div class="form-group">
                         <label for="jumlah"><i class="fas fa-sort-numeric-up"></i> Jumlah (pack) *</label>
                         <input type="number" id="jumlah" name="jumlah" min="1" value="1" required>
                     </div>
                 </div>
-
                 <div class="form-group">
                     <label for="catatan"><i class="fas fa-comment"></i> Catatan Tambahan</label>
                     <textarea id="catatan" name="catatan" rows="3" placeholder="Catatan khusus untuk pesanan Anda (opsional)"></textarea>
                 </div>
-
                 <button type="submit" class="btn btn-primary btn-submit">
                     <i class="fas fa-paper-plane"></i> Kirim Pesanan
                 </button>
@@ -422,7 +316,6 @@
                     <h3><i class="fas fa-cookie-bite"></i> Bude Peyek</h3>
                     <p>Peyek renyah khas nusantara dengan cita rasa autentik dan kualitas terbaik. Produk rumahan yang dibuat dengan penuh cinta.</p>
                 </div>
-
                 <div class="footer-section">
                     <h4>Kontak Kami</h4>
                     <div class="contact-item">
@@ -442,27 +335,17 @@
                         <span>Senin - Sabtu: 08.00 - 20.00 WIB</span>
                     </div>
                 </div>
-
                 <div class="footer-section">
                     <h4>Media Sosial</h4>
                     <p>Ikuti kami untuk update produk dan promo menarik!</p>
                     <div class="social-links">
-                        <a href="#" class="social-link facebook">
-                            <i class="fab fa-facebook-f"></i>
-                        </a>
-                        <a href="#" class="social-link instagram">
-                            <i class="fab fa-instagram"></i>
-                        </a>
-                        <a href="#" class="social-link whatsapp">
-                            <i class="fab fa-whatsapp"></i>
-                        </a>
-                        <a href="#" class="social-link tiktok">
-                            <i class="fab fa-tiktok"></i>
-                        </a>
+                        <a href="#" class="social-link facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="social-link instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="social-link whatsapp"><i class="fab fa-whatsapp"></i></a>
+                        <a href="#" class="social-link tiktok"><i class="fab fa-tiktok"></i></a>
                     </div>
                 </div>
             </div>
-
             <div class="footer-bottom">
                 <p>&copy; 2025 Bude Peyek. All rights reserved. Made with <i class="fas fa-heart"></i> for Indonesian UMKM</p>
             </div>
@@ -470,17 +353,16 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js?v=2"></script>
+    <script src="supabase-config.js"></script>
     <script>
         function initIndexPage() {
             if (!window.supabaseClient) {
-                console.log('⏳ Waiting for Supabase client...');
                 setTimeout(initIndexPage, 100);
                 return;
             }
 
-            console.log('✅ Supabase ready');
             const supabase = window.supabaseClient;
+            console.log('✅ Supabase connected');
 
             async function loadProducts() {
                 try {
@@ -492,24 +374,26 @@
 
                     if (error) throw error;
 
-                    const produkGrid = document.querySelector('.produk-grid');
+                    const produkGrid = document.getElementById('productGrid');
                     const productSelect = document.getElementById('produk');
 
                     if (!products || products.length === 0) {
-                        produkGrid.innerHTML = '<div class="empty-state"><i class="fas fa-box-open"></i><p>Belum ada produk tersedia</p></div>';
+                        produkGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:#9ca3af;"><p>Belum ada produk</p></div>';
                         return;
                     }
 
+                    console.log('📦 Loading', products.length, 'products');
                     produkGrid.innerHTML = '';
                     productSelect.innerHTML = '<option value="">-- Pilih Produk --</option>';
 
                     products.forEach(product => {
-                        const productCard = document.createElement('div');
-                        productCard.className = 'produk-card';
+                        // RENDER CARD
+                        const card = document.createElement('div');
+                        card.className = 'produk-card';
 
                         const imageHtml = product.image_url ? 
                             `<div class="produk-image-photo"><img src="${product.image_url}" alt="${product.name}"></div>` :
-                            `<div class="produk-image"><i class="fas ${product.icon}"></i></div>`;
+                            `<div class="produk-image"><i class="fas ${product.icon || 'fa-cookie'}"></i></div>`;
 
                         const badgeHtml = product.badge ? 
                             `<div class="produk-badge">${product.badge}</div>` : '';
@@ -517,11 +401,11 @@
                         const stockWarning = product.stock < 10 ? 
                             `<div class="stock-warning"><i class="fas fa-exclamation-circle"></i> Stok Terbatas (${product.stock})</div>` : '';
 
-                        productCard.innerHTML = `
+                        card.innerHTML = `
                             ${imageHtml}
                             ${badgeHtml}
                             <h3>${product.name}</h3>
-                            <p>${product.description || ''}</p>
+                            <p>${product.description || 'Peyek renyah dan gurih'}</p>
                             <div class="produk-price">
                                 <span class="price">Rp ${product.price.toLocaleString('id-ID')}</span>
                                 <span class="unit">/ 100gr</span>
@@ -529,8 +413,10 @@
                             ${stockWarning}
                         `;
 
-                        produkGrid.appendChild(productCard);
+                        produkGrid.appendChild(card);
+                        console.log('✅ Card added:', product.name);
 
+                        // DROPDOWN
                         const option = document.createElement('option');
                         option.value = `${product.name} - Rp ${product.price.toLocaleString('id-ID')}`;
                         option.textContent = `${product.name} - Rp ${product.price.toLocaleString('id-ID')}`;
@@ -539,9 +425,11 @@
                         option.dataset.productName = product.name;
                         productSelect.appendChild(option);
                     });
+
+                    console.log('✅ All products loaded');
                 } catch (error) {
-                    console.error('Error:', error);
-                    document.querySelector('.produk-grid').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Gagal memuat produk</p></div>';
+                    console.error('❌ Error:', error);
+                    document.getElementById('productGrid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:#ef4444;"><p>Error: ' + error.message + '</p></div>';
                 }
             }
 
@@ -568,7 +456,7 @@
                 anchor.addEventListener('click', function (e) {
                     e.preventDefault();
                     const target = document.querySelector(this.getAttribute('href'));
-                    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    if (target) target.scrollIntoView({ behavior: 'smooth' });
                 });
             });
 
@@ -603,10 +491,10 @@
                     const storePhone = localStorage.getItem('storePhone') || '6281234567890';
                     window.open(`https://wa.me/${storePhone}?text=${message}`, '_blank');
                     this.reset();
-                    alert('Terima kasih! Pesanan Anda telah tersimpan.');
+                    alert('Terima kasih! Pesanan tersimpan.');
                 } catch (error) {
                     console.error('Error:', error);
-                    alert('Gagal menyimpan pesanan: ' + error.message);
+                    alert('Gagal: ' + error.message);
                 }
             });
 
