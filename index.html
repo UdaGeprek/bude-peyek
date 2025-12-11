@@ -89,78 +89,10 @@
             <p class="section-subtitle">Berbagai pilihan peyek dengan kualitas terbaik</p>
             
             <div class="produk-grid">
-                <div class="produk-card">
-                    <div class="produk-image">
-                        <i class="fas fa-pepper-hot"></i>
-                    </div>
-                    <div class="produk-badge">Best Seller</div>
-                    <h3>Peyek Kacang</h3>
-                    <p>Peyek klasik dengan kacang tanah pilihan yang gurih dan renyah</p>
-                    <div class="produk-price">
-                        <span class="price">Rp 15.000</span>
-                        <span class="unit">/ 100gr</span>
-                    </div>
-                </div>
-
-                <div class="produk-card">
-                    <div class="produk-image">
-                        <i class="fas fa-fish"></i>
-                    </div>
-                    <h3>Peyek Teri</h3>
-                    <p>Kombinasi sempurna antara teri nasi segar dengan bumbu tradisional</p>
-                    <div class="produk-price">
-                        <span class="price">Rp 18.000</span>
-                        <span class="unit">/ 100gr</span>
-                    </div>
-                </div>
-
-                <div class="produk-card">
-                    <div class="produk-image">
-                        <i class="fas fa-seedling"></i>
-                    </div>
-                    <h3>Peyek Kedelai</h3>
-                    <p>Peyek kedelai pilihan dengan tekstur renyah dan rasa gurih alami</p>
-                    <div class="produk-price">
-                        <span class="price">Rp 12.000</span>
-                        <span class="unit">/ 100gr</span>
-                    </div>
-                </div>
-
-                <div class="produk-card">
-                    <div class="produk-image">
-                        <i class="fas fa-shrimp"></i>
-                    </div>
-                    <div class="produk-badge">Premium</div>
-                    <h3>Peyek Udang</h3>
-                    <p>Peyek premium dengan udang segar berkualitas tinggi</p>
-                    <div class="produk-price">
-                        <span class="price">Rp 25.000</span>
-                        <span class="unit">/ 100gr</span>
-                    </div>
-                </div>
-
-                <div class="produk-card">
-                    <div class="produk-image">
-                        <i class="fas fa-leaf"></i>
-                    </div>
-                    <h3>Peyek Bayam</h3>
-                    <p>Peyek sehat dengan bayam segar, cocok untuk camilan bergizi</p>
-                    <div class="produk-price">
-                        <span class="price">Rp 14.000</span>
-                        <span class="unit">/ 100gr</span>
-                    </div>
-                </div>
-
-                <div class="produk-card">
-                    <div class="produk-image">
-                        <i class="fas fa-sun"></i>
-                    </div>
-                    <h3>Peyek Jagung</h3>
-                    <p>Peyek manis dan gurih dari jagung pipil pilihan</p>
-                    <div class="produk-price">
-                        <span class="price">Rp 13.000</span>
-                        <span class="unit">/ 100gr</span>
-                    </div>
+                <!-- Products will be loaded from Supabase -->
+                <div class="loading-state">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Memuat produk...</p>
                 </div>
             </div>
 
@@ -263,12 +195,6 @@
                         <label for="produk"><i class="fas fa-box"></i> Pilih Produk *</label>
                         <select id="produk" name="produk" required>
                             <option value="">-- Pilih Produk --</option>
-                            <option value="Peyek Kacang - Rp 15.000">Peyek Kacang - Rp 15.000</option>
-                            <option value="Peyek Teri - Rp 18.000">Peyek Teri - Rp 18.000</option>
-                            <option value="Peyek Kedelai - Rp 12.000">Peyek Kedelai - Rp 12.000</option>
-                            <option value="Peyek Udang - Rp 25.000">Peyek Udang - Rp 25.000</option>
-                            <option value="Peyek Bayam - Rp 14.000">Peyek Bayam - Rp 14.000</option>
-                            <option value="Peyek Jagung - Rp 13.000">Peyek Jagung - Rp 13.000</option>
                         </select>
                     </div>
 
@@ -345,23 +271,24 @@
         </div>
     </footer>
 
-<!-- Load Supabase SDK -->
+    <!-- Load Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- Load Supabase Config -->
-    
     <script src="supabase-config.js?v=2"></script>
 
-
+    <!-- Main Script -->
     <script>
- // Wait for Supabase to be ready
-        window.addEventListener('load', async function() {
-            const supabase = window.supabaseClient;
-
-            if (!supabase) {
-                console.error('Supabase client not initialized');
+        // Wait for Supabase client to be ready
+        function initIndexPage() {
+            if (!window.supabaseClient) {
+                console.log('⏳ Waiting for Supabase client on index page...');
+                setTimeout(initIndexPage, 100);
                 return;
             }
+
+            console.log('✅ Supabase client ready on index page');
+            const supabase = window.supabaseClient;
 
             // Load products from Supabase
             async function loadProducts() {
@@ -427,12 +354,10 @@
                     });
                 } catch (error) {
                     console.error('Error loading products:', error);
-                    alert('Gagal memuat produk: ' + error.message);
+                    const produkGrid = document.querySelector('.produk-grid');
+                    produkGrid.innerHTML = '<div class="empty-state"><p>Gagal memuat produk. Silakan refresh halaman.</p></div>';
                 }
             }
-
-            // Load products on page load
-            await loadProducts();
 
             // Subscribe to real-time changes
             supabase
@@ -441,7 +366,7 @@
                     { event: '*', schema: 'public', table: 'products' },
                     (payload) => {
                         console.log('Product updated:', payload);
-                        loadProducts(); // Reload products when changed
+                        loadProducts();
                     }
                 )
                 .subscribe();
@@ -541,9 +466,17 @@
                     navbar.classList.remove('scrolled');
                 }
             });
-        });
 
-           </script>
+            // Load products on page initialization
+            loadProducts();
+        }
+
+        // Start initialization
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initIndexPage);
+        } else {
+            initIndexPage();
+        }
+    </script>
 </body>
 </html>
-
