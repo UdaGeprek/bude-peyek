@@ -10,7 +10,7 @@ if (!window.supabaseClient) {
     alert('Supabase belum terhubung! Pastikan supabase-config.js sudah di-load.');
 }
 
-const supabase = window.supabaseClient;
+supabase = window.supabaseClient;
 
 // State variables
 let products = [];
