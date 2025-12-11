@@ -37,7 +37,9 @@
         <div class="container hero-content">
             <h1 class="hero-title">Bude Peyek</h1>
             <p class="hero-subtitle">Peyek Renyah Khas Nusantara</p>
-            <p class="hero-description">Dibuat dengan bahan pilihan dan resep tradisional turun temurun. Nikmati kelezatan peyek yang gurih dan renyah!</p>
+            <p class="hero-description">
+                Dibuat dengan bahan pilihan dan resep tradisional turun temurun. Nikmati kelezatan peyek yang gurih dan renyah!
+            </p>
             <div class="hero-buttons">
                 <a href="#produk" class="btn btn-primary">Lihat Produk</a>
                 <a href="#pesan" class="btn btn-secondary">Pesan Sekarang</a>
@@ -57,8 +59,12 @@
                 </div>
                 <div class="tentang-text">
                     <h3>Sejarah Bude Peyek</h3>
-                    <p>Bude Peyek adalah usaha rumahan yang telah berdiri sejak tahun 2015. Berawal dari hobi memasak dan kecintaan pada kuliner tradisional, kami menghadirkan peyek berkualitas dengan cita rasa autentik.</p>
-                    <p>Setiap produk dibuat dengan penuh perhatian menggunakan bahan-bahan pilihan dan tanpa bahan pengawet. Kami berkomitmen untuk memberikan camilan sehat dan lezat untuk keluarga Indonesia.</p>
+                    <p>
+                        Bude Peyek adalah usaha rumahan yang telah berdiri sejak tahun 2015. Berawal dari hobi memasak dan kecintaan pada kuliner tradisional, kami menghadirkan peyek berkualitas dengan cita rasa autentik.
+                    </p>
+                    <p>
+                        Setiap produk dibuat dengan penuh perhatian menggunakan bahan-bahan pilihan dan tanpa bahan pengawet. Kami berkomitmen untuk memberikan camilan sehat dan lezat untuk keluarga Indonesia.
+                    </p>
                     <div class="features">
                         <div class="feature-item">
                             <i class="fas fa-check-circle"></i>
@@ -82,20 +88,17 @@
         </div>
     </section>
 
-    <!-- Produk Section (DINAMIS) -->
+    <!-- Produk Section (DIISI DINAMIS) -->
     <section id="produk" class="produk">
         <div class="container">
             <h2 class="section-title">Daftar Produk & Harga</h2>
             <p class="section-subtitle">Berbagai pilihan peyek dengan kualitas terbaik</p>
-            
-            <!-- GRID PRODUK (Diisi Javascript) -->
+
             <div class="produk-grid" id="productGrid">
-                <!-- Loading State -->
+                <!-- Initial loading state -->
                 <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
-                    <div style="display: inline-block; position: relative;">
-                        <i class="fas fa-cookie-bite" style="font-size: 4rem; color: #f97316; animation: pulse 1.5s ease-in-out infinite;"></i>
-                    </div>
-                    <p style="color: #f97316; font-weight: 600; margin-top: 1rem; font-size: 1.1rem;">Sedang memuat produk...</p>
+                    <i class="fas fa-cookie-bite" style="font-size: 3rem; color:#f97316; animation: pulse 1.5s infinite;"></i>
+                    <p style="margin-top: 0.75rem; color:#6b7280;">Sedang memuat produk...</p>
                 </div>
             </div>
 
@@ -109,34 +112,28 @@
         </div>
     </section>
 
-    <!-- Cara Pesan Section -->
+    <!-- Cara Pesan -->
     <section id="cara-pesan" class="cara-pesan">
         <div class="container">
             <h2 class="section-title">Cara Pemesanan</h2>
             <p class="section-subtitle">Mudah dan cepat, hanya dalam 3 langkah</p>
-            
+
             <div class="steps">
                 <div class="step-item">
                     <div class="step-number">1</div>
-                    <div class="step-icon">
-                        <i class="fas fa-shopping-cart"></i>
-                    </div>
+                    <div class="step-icon"><i class="fas fa-shopping-cart"></i></div>
                     <h3>Pilih Produk</h3>
                     <p>Pilih produk peyek favorit Anda dan tentukan jumlah yang diinginkan melalui formulir pemesanan</p>
                 </div>
                 <div class="step-item">
                     <div class="step-number">2</div>
-                    <div class="step-icon">
-                        <i class="fas fa-edit"></i>
-                    </div>
+                    <div class="step-icon"><i class="fas fa-edit"></i></div>
                     <h3>Isi Formulir</h3>
                     <p>Lengkapi data pemesanan dengan informasi kontak dan alamat pengiriman yang benar</p>
                 </div>
                 <div class="step-item">
                     <div class="step-number">3</div>
-                    <div class="step-icon">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
+                    <div class="step-icon"><i class="fas fa-check-circle"></i></div>
                     <h3>Konfirmasi</h3>
                     <p>Tim kami akan menghubungi Anda untuk konfirmasi pesanan dan pembayaran</p>
                 </div>
@@ -167,7 +164,7 @@
         <div class="container">
             <h2 class="section-title">Formulir Pemesanan Online</h2>
             <p class="section-subtitle">Isi formulir di bawah ini untuk memesan produk</p>
-            
+
             <form class="order-form">
                 <div class="form-row">
                     <div class="form-group">
@@ -179,20 +176,22 @@
                         <input type="tel" id="telepon" name="telepon" required placeholder="08xxxxxxxxxx">
                     </div>
                 </div>
+
                 <div class="form-group">
                     <label for="email"><i class="fas fa-envelope"></i> Email</label>
                     <input type="email" id="email" name="email" placeholder="email@contoh.com">
                 </div>
+
                 <div class="form-group">
                     <label for="alamat"><i class="fas fa-map-marker-alt"></i> Alamat Lengkap *</label>
                     <textarea id="alamat" name="alamat" rows="3" required placeholder="Masukkan alamat lengkap untuk pengiriman"></textarea>
                 </div>
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="produk"><i class="fas fa-box"></i> Pilih Produk *</label>
-                        <!-- Opsi akan diisi oleh Javascript -->
                         <select id="produk" name="produk" required>
-                            <option value="">-- Sedang Memuat... --</option>
+                            <option value="">-- Sedang memuat produk --</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -200,10 +199,12 @@
                         <input type="number" id="jumlah" name="jumlah" min="1" value="1" required>
                     </div>
                 </div>
+
                 <div class="form-group">
                     <label for="catatan"><i class="fas fa-comment"></i> Catatan Tambahan</label>
                     <textarea id="catatan" name="catatan" rows="3" placeholder="Catatan khusus untuk pesanan Anda (opsional)"></textarea>
                 </div>
+
                 <button type="submit" class="btn btn-primary btn-submit">
                     <i class="fas fa-paper-plane"></i> Kirim Pesanan
                 </button>
@@ -255,21 +256,60 @@
         </div>
     </footer>
 
-    <!-- LOGIC SCRIPT (FIXED) -->
+    <!-- Supabase & Logic -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            if (typeof window.supabaseClient === 'undefined') {
-                console.error('❌ Supabase Client belum siap! Cek supabase-config.js');
-                return;
+        document.addEventListener('DOMContentLoaded', () => {
+            // Mobile nav
+            const hamburger = document.querySelector('.hamburger');
+            const navMenu = document.querySelector('.nav-menu');
+            hamburger.addEventListener('click', () => {
+                hamburger.classList.toggle('active');
+                navMenu.classList.toggle('active');
+            });
+            document.querySelectorAll('.nav-menu a').forEach(link => {
+                link.addEventListener('click', () => {
+                    hamburger.classList.remove('active');
+                    navMenu.classList.remove('active');
+                });
+            });
+
+            // Smooth scroll
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                });
+            });
+
+            // Navbar scroll effect
+            window.addEventListener('scroll', () => {
+                const navbar = document.querySelector('.navbar');
+                if (window.scrollY > 50) navbar.classList.add('scrolled');
+                else navbar.classList.remove('scrolled');
+            });
+
+            // Tunggu Supabase client dari supabase-config.js
+            function waitForSupabaseAndInit() {
+                if (!window.supabaseClient) {
+                    setTimeout(waitForSupabaseAndInit, 100);
+                    return;
+                }
+                initWithSupabase(window.supabaseClient);
             }
-            const supabase = window.supabaseClient;
 
-            const produkGrid = document.getElementById('productGrid');
-            const produkSelect = document.getElementById('produk');
+            waitForSupabaseAndInit();
+        });
 
-            // --- LOAD DATA PRODUK ---
+        function initWithSupabase(supabase) {
+            const productGrid = document.getElementById('productGrid');
+            const productSelect = document.getElementById('produk');
+            const orderForm = document.querySelector('.order-form');
+
             async function loadProducts() {
                 try {
                     const { data: products, error } = await supabase
@@ -280,127 +320,132 @@
 
                     if (error) throw error;
 
-                    // Bersihkan Loading
-                    produkGrid.innerHTML = '';
-                    produkSelect.innerHTML = '<option value="">-- Pilih Produk --</option>';
+                    // Reset UI
+                    productGrid.innerHTML = '';
+                    productSelect.innerHTML = '<option value="">-- Pilih Produk --</option>';
 
                     if (!products || products.length === 0) {
-                        produkGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;">Belum ada produk.</div>';
+                        productGrid.innerHTML = `
+                            <div style="grid-column:1/-1;text-align:center;padding:3rem;color:#6b7280;">
+                                Belum ada produk.
+                            </div>`;
                         return;
                     }
 
-                    // Render setiap produk
-                    products.forEach(product => {
-                        // 1. BUAT CARD (TAMPILAN)
+                    products.forEach((product) => {
+                        // Card UI (sesuai CSS)
                         const card = document.createElement('div');
                         card.className = 'produk-card';
 
-                        // Logic Gambar/Icon
-                        let imgHTML = '';
-                        if(product.image_url) {
-                            imgHTML = `<div class="produk-image-photo"><img src="${product.image_url}" alt="${product.name}"></div>`;
-                        } else {
-                            imgHTML = `<div class="produk-image"><i class="fas ${product.icon || 'fa-cookie'}"></i></div>`;
-                        }
+                        const imageHTML = product.image_url
+                            ? `<div class="produk-image-photo"><img src="${product.image_url}" alt="${product.name}"></div>`
+                            : `<div class="produk-image"><i class="fas ${product.icon || 'fa-cookie'}"></i></div>`;
 
-                        // Logic Badge
-                        let badgeHTML = product.badge ? `<div class="produk-badge">${product.badge}</div>` : '';
+                        const badgeHTML = product.badge
+                            ? `<div class="produk-badge">${product.badge}</div>`
+                            : '';
 
-                        // Logic Stok
-                        let stockHTML = product.stock < 10 ? `<div class="stock-warning"><i class="fas fa-exclamation-circle"></i> Stok Terbatas (${product.stock})</div>` : '';
+                        const stockHTML = typeof product.stock === 'number' && product.stock < 10
+                            ? `<div class="stock-warning"><i class="fas fa-exclamation-circle"></i> Stok Terbatas (${product.stock})</div>`
+                            : '';
 
                         card.innerHTML = `
-                            ${imgHTML}
+                            ${imageHTML}
                             ${badgeHTML}
                             <div class="produk-content">
                                 <h3>${product.name}</h3>
-                                <p>${product.description || 'Peyek renyah khas nusantara.'}</p>
+                                <p>${product.description || 'Peyek renyah dan gurih dengan bahan pilihan berkualitas.'}</p>
                                 <div class="produk-price">
                                     <span class="price">Rp ${product.price.toLocaleString('id-ID')}</span>
-                                    <span class="unit">/ pack</span>
+                                    <span class="unit">/ 100gr</span>
                                 </div>
                             </div>
                             ${stockHTML}
                         `;
-                        produkGrid.appendChild(card);
+                        productGrid.appendChild(card);
 
-                        // 2. ISI DROPDOWN FORM
-                        const option = document.createElement('option');
-                        option.value = `${product.name} (Rp ${product.price})`; // Value simpan
-                        option.text = `${product.name} - Rp ${product.price.toLocaleString('id-ID')}`; // Text tampil
-                        option.dataset.id = product.id;
-                        option.dataset.name = product.name;
-                        option.dataset.price = product.price;
-                        produkSelect.appendChild(option);
+                        // Option di dropdown
+                        const opt = document.createElement('option');
+                        opt.value = product.id; // kirim id, data detail di dataset
+                        opt.textContent = `${product.name} - Rp ${product.price.toLocaleString('id-ID')}`;
+                        opt.dataset.name = product.name;
+                        opt.dataset.price = product.price;
+                        productSelect.appendChild(opt);
                     });
-
                 } catch (err) {
-                    console.error('Error load:', err);
-                    produkGrid.innerHTML = `<div style="color:red;text-align:center;">Gagal memuat: ${err.message}</div>`;
+                    console.error('Error loadProducts:', err);
+                    productGrid.innerHTML = `
+                        <div style="grid-column:1/-1;text-align:center;padding:3rem;color:#b91c1c;">
+                            Gagal memuat produk: ${err.message}
+                        </div>`;
                 }
             }
 
-            // --- SUBMIT FORM ---
-            const orderForm = document.querySelector('.order-form');
-            if(orderForm) {
+            // Form submit
+            if (orderForm) {
                 orderForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    
-                    const selectedOption = produkSelect.options[produkSelect.selectedIndex];
-                    if (produkSelect.value === "") {
-                        alert('Pilih produk dulu!');
+
+                    const selected = productSelect.options[productSelect.selectedIndex];
+                    if (!selected || !selected.value) {
+                        alert('Silakan pilih produk terlebih dahulu.');
                         return;
                     }
 
                     const formData = new FormData(orderForm);
-                    const data = Object.fromEntries(formData);
-                    
-                    // Detail produk dari dataset dropdown
-                    const productId = selectedOption.dataset.id;
-                    const productName = selectedOption.dataset.name;
-                    const productPrice = parseInt(selectedOption.dataset.price);
-                    const qty = parseInt(data.jumlah);
-                    const total = productPrice * qty;
+                    const nama = formData.get('nama');
+                    const telepon = formData.get('telepon');
+                    const email = formData.get('email') || null;
+                    const alamat = formData.get('alamat');
+                    const jumlah = parseInt(formData.get('jumlah') || '1', 10);
+                    const catatan = formData.get('catatan') || null;
+
+                    const productId = parseInt(selected.value, 10);
+                    const productName = selected.dataset.name;
+                    const productPrice = parseInt(selected.dataset.price || '0', 10);
+                    const total = productPrice * jumlah;
 
                     try {
                         const { error } = await supabase.from('orders').insert([{
-                            customer_name: data.nama,
-                            phone: data.telepon,
-                            email: data.email,
-                            address: data.alamat,
+                            customer_name: nama,
+                            phone: telepon,
+                            email,
+                            address: alamat,
                             product_id: productId,
                             product_name: productName,
-                            quantity: qty,
-                            total: total,
-                            notes: data.catatan
+                            quantity: jumlah,
+                            total,
+                            notes: catatan,
+                            status: 'pending'
                         }]);
 
                         if (error) throw error;
 
-                        const waMsg = `*ORDER BARU*%0A%0ANama: ${data.nama}%0AProduk: ${productName}%0AJumlah: ${qty}%0ATotal: Rp ${total.toLocaleString('id-ID')}%0AAlamat: ${data.alamat}`;
-                        window.open(`https://wa.me/6281234567890?text=${waMsg}`, '_blank');
-                        
-                        alert('Pesanan berhasil!');
+                        const waText =
+                            `*PESANAN BARU - BUDE PEYEK*%0A%0A` +
+                            `Nama: ${nama}%0A` +
+                            `Telepon: ${telepon}%0A` +
+                            `Email: ${email || '-'}%0A` +
+                            `Alamat: ${alamat}%0A` +
+                            `Produk: ${productName}%0A` +
+                            `Jumlah: ${jumlah} pack%0A` +
+                            `Total: Rp ${total.toLocaleString('id-ID')}%0A` +
+                            `Catatan: ${catatan || '-'}`;
+
+                        const adminPhone = '6281234567890'; // ganti ke nomor admin
+                        window.open(`https://wa.me/${adminPhone}?text=${waText}`, '_blank');
+
+                        alert('Pesanan berhasil dikirim!');
                         orderForm.reset();
                     } catch (err) {
-                        alert('Gagal: ' + err.message);
+                        console.error('Error submit order:', err);
+                        alert('Gagal mengirim pesanan: ' + err.message);
                     }
                 });
             }
 
-            // Init
             loadProducts();
-
-            // Navbar Mobile
-            const hamburger = document.querySelector('.hamburger');
-            const navMenu = document.querySelector('.nav-menu');
-            if(hamburger) {
-                hamburger.addEventListener('click', () => {
-                    hamburger.classList.toggle('active');
-                    navMenu.classList.toggle('active');
-                });
-            }
-        });
+        }
     </script>
 </body>
 </html>
