@@ -83,29 +83,33 @@
     </section>
 
     <!-- Produk Section - DINAMIS DARI DATABASE -->
-    <section id="produk" class="produk">
-        <div class="container">
-            <h2 class="section-title">Daftar Produk & Harga</h2>
-            <p class="section-subtitle">Berbagai pilihan peyek dengan kualitas terbaik</p>
-            
-            <!-- GRID PRODUK DINAMIS -->
-            <div class="produk-grid" id="productGrid">
-                <!-- Loading State -->
-                <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: #f97316;">
-                    <i class="fas fa-spinner fa-spin" style="font-size: 3rem; margin-bottom: 1rem;"></i>
-                    <p>Memuat produk...</p>
+<section id="produk" class="produk">
+    <div class="container">
+        <h2 class="section-title">Daftar Produk & Harga</h2>
+        <p class="section-subtitle">Berbagai pilihan peyek dengan kualitas terbaik</p>
+        
+        <!-- GRID PRODUK DINAMIS -->
+        <div class="produk-grid" id="productGrid">
+            <!-- Loading State - akan hilang otomatis -->
+            <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
+                <div style="display: inline-block; position: relative;">
+                    <i class="fas fa-cookie-bite" style="font-size: 4rem; color: #f97316; animation: pulse 1.5s ease-in-out infinite;"></i>
                 </div>
-            </div>
-
-            <div class="promo-box">
-                <i class="fas fa-gift"></i>
-                <div class="promo-text">
-                    <h4>Promo Spesial!</h4>
-                    <p>Beli 5 pack atau lebih, dapatkan diskon 10%</p>
-                </div>
+                <p style="color: #f97316; font-weight: 600; margin-top: 1rem; font-size: 1.1rem;">Memuat produk...</p>
+                <p style="color: #9ca3af; font-size: 0.9rem;">Harap tunggu sebentar</p>
             </div>
         </div>
-    </section>
+
+        <div class="promo-box">
+            <i class="fas fa-gift"></i>
+            <div class="promo-text">
+                <h4>Promo Spesial!</h4>
+                <p>Beli 5 pack atau lebih, dapatkan diskon 10%</p>
+            </div>
+        </div>
+    </div>
+</section>
+
 
     <!-- Cara Pesan Section -->
     <section id="cara-pesan" class="cara-pesan">
@@ -504,4 +508,5 @@
 
 </body>
 </html>
+
 
