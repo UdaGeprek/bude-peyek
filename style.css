@@ -312,7 +312,9 @@ a {
     color: #16a34a;
 }
 
-/* Produk */
+/* ========================================
+   PRODUK SECTION - IMPROVED DESIGN
+   ======================================== */
 .produk {
     padding: 4rem 0;
     background: linear-gradient(to bottom, #fff7ed, #fefce8);
@@ -320,85 +322,200 @@ a {
 
 .produk-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1.75rem;
-    margin-top: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 2.5rem;
 }
 
 .produk-card {
     background-color: #ffffff;
-    border-radius: 1.25rem;
-    padding: 1.5rem 1.4rem;
-    box-shadow: 0 16px 35px rgba(248, 113, 22, 0.08);
-    position: relative;
+    border-radius: 1.5rem;
     overflow: hidden;
-    border: 1px solid rgba(248, 187, 107, 0.25);
-    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    box-shadow: 0 10px 30px rgba(248, 113, 22, 0.1);
+    position: relative;
+    border: 1px solid rgba(248, 187, 107, 0.2);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    display: flex;
+    flex-direction: column;
 }
 
 .produk-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 20px 50px rgba(248, 113, 22, 0.15);
-    border-color: rgba(248, 113, 22, 0.5);
+    transform: translateY(-8px);
+    box-shadow: 0 20px 50px rgba(248, 113, 22, 0.2);
+    border-color: rgba(248, 113, 22, 0.4);
 }
 
+/* Produk Image - Icon Based */
 .produk-image {
-    width: 52px;
-    height: 52px;
-    border-radius: 999px;
-    background: radial-gradient(circle at top left, #f97316, #ea580c);
+    width: 100%;
+    height: 220px;
+    background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff7ed;
-    margin-bottom: 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.produk-image::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(10%, 10%); }
 }
 
 .produk-image i {
-    font-size: 1.4rem;
+    font-size: 5rem;
+    color: rgba(255, 255, 255, 0.95);
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.2));
+    z-index: 1;
 }
 
+/* Produk Image - Photo Based */
+.produk-image-photo {
+    width: 100%;
+    height: 220px;
+    overflow: hidden;
+    background-color: #f3f4f6;
+    position: relative;
+}
+
+.produk-image-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.4s ease;
+}
+
+.produk-card:hover .produk-image-photo img {
+    transform: scale(1.15);
+}
+
+/* Produk Badge */
 .produk-badge {
     position: absolute;
-    top: 1.1rem;
-    right: 1.1rem;
+    top: 1rem;
+    right: 1rem;
     font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    background-color: #f97316;
-    color: #fff7ed;
-    padding: 0.2rem 0.6rem;
+    background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+    color: #ffffff;
+    padding: 0.35rem 0.75rem;
     border-radius: 999px;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+}
+
+/* Produk Content */
+.produk-card > * {
+    padding: 0 1.5rem;
+}
+
+.produk-card .produk-image,
+.produk-card .produk-image-photo {
+    padding: 0;
 }
 
 .produk h3 {
-    font-size: 1.1rem;
-    margin-bottom: 0.25rem;
+    font-size: 1.25rem;
+    margin: 1.25rem 0 0.5rem;
+    color: #1f2937;
+    font-weight: 700;
 }
 
 .produk p {
-    font-size: 0.92rem;
+    font-size: 0.875rem;
     color: #6b7280;
-    margin-bottom: 0.75rem;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    flex-grow: 1;
 }
 
 .produk-price {
     display: flex;
     align-items: baseline;
-    gap: 0.3rem;
-    margin-top: 0.25rem;
+    gap: 0.5rem;
+    margin: auto 0 0;
+    padding: 1rem 1.5rem 1.5rem;
+    border-top: 2px solid #f9fafb;
 }
 
 .price {
-    font-size: 1.1rem;
+    font-size: 1.5rem;
     font-weight: 700;
-    color: #b45309;
+    color: #f97316;
 }
 
 .unit {
-    font-size: 0.8rem;
+    font-size: 0.875rem;
     color: #9ca3af;
+    font-weight: 500;
+}
+
+/* Stock Warning */
+.stock-warning {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.75rem 1.5rem 1rem;
+    padding: 0.5rem 0.75rem;
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border-left: 3px solid #f59e0b;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    color: #92400e;
+    font-weight: 600;
+}
+
+.stock-warning i {
+    color: #f59e0b;
+    font-size: 0.875rem;
+}
+
+/* Loading & Empty States */
+.loading-state,
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #9ca3af;
+}
+
+.loading-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #f97316;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    color: #d1d5db;
+}
+
+.loading-state p,
+.empty-state p {
+    font-size: 1.125rem;
+    color: #6b7280;
+    margin-top: 0.5rem;
 }
 
 .promo-box {
@@ -658,41 +775,14 @@ a {
     color: #ef4444;
 }
 
-/* Produk Image Photo */
-.produk-image-photo {
-    width: 100%;
-    height: 180px;
-    border-radius: 0.75rem;
-    overflow: hidden;
-    margin-bottom: 1rem;
-    background-color: #f3f4f6;
-}
-
-.produk-image-photo img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
-}
-
-.produk-card:hover .produk-image-photo img {
-    transform: scale(1.05);
-}
-
-.stock-warning {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.25rem 0.5rem;
-    background-color: #fef3c7;
-    color: #d97706;
-    border-radius: 0.375rem;
-    font-size: 0.75rem;
-    margin-top: 0.5rem;
-}
-
-
 /* Responsive */
+@media (max-width: 1024px) {
+    .produk-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+}
+
 @media (max-width: 960px) {
     .produk-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -761,6 +851,15 @@ a {
         grid-template-columns: 1fr;
     }
 
+    .produk-image,
+    .produk-image-photo {
+        height: 180px;
+    }
+
+    .produk-image i {
+        font-size: 4rem;
+    }
+
     .order-form {
         padding: 1.5rem 1.1rem;
     }
@@ -782,5 +881,14 @@ a {
 
     .btn {
         width: 100%;
+    }
+
+    .produk-card {
+        min-height: auto;
+    }
+
+    .produk-image,
+    .produk-image-photo {
+        height: 200px;
     }
 }
