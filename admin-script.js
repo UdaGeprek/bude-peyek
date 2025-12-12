@@ -1,10 +1,5 @@
 // Admin Script with Supabase Integration
 
-// Check if admin is logged in
-if (!sessionStorage.getItem('adminLoggedIn')) {
-    window.location.href = 'login.html';
-}
-
 // Wait for Supabase client to be ready
 function initAdmin() {
     if (!window.supabaseClient) {
