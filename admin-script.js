@@ -1,5 +1,5 @@
 // admin-script.js
-// Admin Dashboard Bude Peyek – Supabase Auth + Products/Orders
+// Admin Dashboard Bude Peyek – Supabase Auth + Orders + Stok + WhatsApp
 
 function initAdmin() {
     if (!window.supabaseClient) {
@@ -14,7 +14,6 @@ function initAdmin() {
     // ====== STATE ======
     let products = [];
     let orders = [];
-    let currentProductId = null;
 
     // ====== UTIL ======
     const formatRupiah = (value) => {
@@ -26,24 +25,47 @@ function initAdmin() {
         }).format(num);
     };
 
-    const getStatusBadgeClass = (status) => {
+    const ORDER_STATUS_LIST = [
+        { value: 'pending',   label: 'Pending / Baru' },
+        { value: 'processing',label: 'Diproses' },
+        { value: 'shipped',   label: 'Dikirim' },
+        { value: 'completed', label: 'Selesai' },
+        { value: 'cancelled', label: 'Dibatalkan' },
+    ];
+
+    const statusToBadgeClass = (status) => {
         switch (status) {
-            case 'pending': return 'badge-warning';
-            case 'processing': return 'badge-info';
-            case 'completed': return 'badge-success';
-            case 'cancelled': return 'badge-danger';
-            case 'active': return 'badge-success';
-            case 'inactive': return 'badge-secondary';
-            default: return 'badge-secondary';
+            case 'pending':   return 'status-badge pending';
+            case 'processing':return 'status-badge processing';
+            case 'shipped':   return 'status-badge processing'; // sama warna dengan processing
+            case 'completed': return 'status-badge completed';
+            case 'cancelled': return 'status-badge cancelled';
+            case 'active':    return 'status-badge active';
+            case 'inactive':  return 'status-badge inactive';
+            default:          return 'status-badge';
         }
     };
 
-    // ====== AUTH CHECK – hanya via Supabase Auth ======
+    const statusToText = (status) => {
+        switch (status) {
+            case 'pending':   return 'Pending / Baru';
+            case 'processing':return 'Diproses';
+            case 'shipped':   return 'Dikirim';
+            case 'completed': return 'Selesai';
+            case 'cancelled': return 'Dibatalkan';
+            default:          return status || '-';
+        }
+    };
+
+    const isStockCountedStatus = (status) =>
+        ['processing', 'shipped', 'completed'].includes(status);
+
+    // ====== AUTH CHECK – HANYA Supabase Auth ======
     async function requireAuth() {
         try {
             const { data, error } = await supabase.auth.getUser();
             if (error || !data || !data.user) {
-                console.warn('Belum login / sesi habis → balik ke login');
+                console.warn('Belum login / sesi habis → ke login.html');
                 window.location.href = 'login.html';
                 return null;
             }
@@ -98,6 +120,8 @@ function initAdmin() {
     const logoutBtn = document.getElementById('logoutBtn');
     const menuToggle = document.getElementById('menuToggle');
     const changePasswordForm = document.getElementById('changePasswordForm');
+
+    let currentProductId = null;
 
     // ====== NAVIGASI HALAMAN ======
     function showPage(page) {
@@ -169,28 +193,30 @@ function initAdmin() {
         if (!products.length) {
             productTableBody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="text-center">Belum ada produk.</td>
+                    <td colspan="6" class="empty-state">
+                        <i class="fas fa-box"></i>
+                        <p>Belum ada produk.</p>
+                    </td>
                 </tr>`;
             return;
         }
 
         products.forEach((p) => {
             const tr = document.createElement('tr');
-            const stockDisplay = (p.stock ?? '') === '' ? '-' : p.stock;
+            const stock = p.stock ?? 0;
             const iconClass = p.icon || 'fa-cookie-bite';
+            const isHabis = stock <= 0;
             const badgeHtml = p.badge
-                ? `<span class="badge badge-warning">${p.badge}</span>`
+                ? `<span class="status-badge pending">${p.badge}</span>`
                 : '';
 
             tr.innerHTML = `
                 <td>
-                    <div class="product-image-cell">
-                        ${
-                            p.image_url
-                                ? `<img src="${p.image_url}" alt="${p.name || ''}">`
-                                : `<div class="product-icon-fallback"><i class="fas ${iconClass}"></i></div>`
-                        }
-                    </div>
+                    ${
+                        p.image_url
+                            ? `<img src="${p.image_url}" alt="${p.name || ''}" class="product-image-cell">`
+                            : `<div class="product-icon-cell"><i class="fas ${iconClass}"></i></div>`
+                    }
                 </td>
                 <td>
                     <div class="product-info-cell">
@@ -200,25 +226,32 @@ function initAdmin() {
                     </div>
                 </td>
                 <td>${formatRupiah(p.price)}</td>
-                <td>${stockDisplay}</td>
                 <td>
-                    <span class="badge ${getStatusBadgeClass(p.status || 'active')}">
-                        ${p.status || 'active'}
+                    ${isHabis
+                        ? '<span class="status-badge inactive">Stok Habis</span>'
+                        : `<span class="status-badge active">Stok: ${stock}</span>`
+                    }
+                </td>
+                <td>
+                    <span class="${statusToBadgeClass(p.status || (isHabis ? 'inactive' : 'active'))}">
+                        ${p.status || (isHabis ? 'inactive' : 'active')}
                     </span>
                 </td>
                 <td>
-                    <button class="btn-table btn-edit" data-id="${p.id}">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn-table btn-delete" data-id="${p.id}">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
+                    <div class="table-actions">
+                        <button class="btn-icon edit btn-edit" data-id="${p.id}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-icon delete btn-delete" data-id="${p.id}">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
                 </td>
             `;
             productTableBody.appendChild(tr);
         });
 
-        // Binding tombol EDIT
+        // Edit
         productTableBody.querySelectorAll('.btn-edit').forEach(btn => {
             btn.addEventListener('click', () => {
                 const id = Number(btn.dataset.id);
@@ -226,7 +259,7 @@ function initAdmin() {
             });
         });
 
-        // Binding tombol DELETE
+        // Delete
         productTableBody.querySelectorAll('.btn-delete').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const id = Number(btn.dataset.id);
@@ -332,14 +365,12 @@ function initAdmin() {
         });
     }
 
-    // Badge show/hide
     if (productBadgeCheckbox && badgeTextGroup) {
         productBadgeCheckbox.addEventListener('change', () => {
             badgeTextGroup.style.display = productBadgeCheckbox.checked ? 'block' : 'none';
         });
     }
 
-    // Image picker & preview
     if (imagePreview && productImageInput) {
         imagePreview.addEventListener('click', () => {
             productImageInput.click();
@@ -433,7 +464,7 @@ function initAdmin() {
                 stock,
                 icon,
                 badge,
-                status: 'active'
+                status: stock !== null && stock <= 0 ? 'inactive' : 'active'
             };
             if (image_url) payload.image_url = image_url;
 
@@ -470,7 +501,22 @@ function initAdmin() {
         });
     }
 
-    // ====== PESANAN ======
+    // ====== PESANAN: TABEL + STATUS + WHATSAPP ======
+    function buildWhatsAppUrlForOrder(order) {
+        // Nomor tujuan
+        const defaultAdminNumber = '6283169352889';
+        let waNumber = defaultAdminNumber;
+        if (order.phone) {
+            let digits = order.phone.toString().replace(/[^0-9]/g, '').trim();
+            if (digits.startsWith('0')) digits = '62' + digits.slice(1);
+            else if (!digits.startsWith('62')) digits = '62' + digits;
+            waNumber = digits;
+        }
+
+        const text = `Halo Kak ${order.customer_name || ''}, pesanan ${order.product_name || ''} sebanyak ${order.quantity || 0} dengan total ${formatRupiah(order.total || 0)} sedang kami proses. Terima kasih sudah memesan di Bude Peyek 🙏`;
+        return `https://wa.me/${waNumber}?text=${encodeURIComponent(text)}`;
+    }
+
     function renderOrderTable() {
         if (!orderTableBody) return;
 
@@ -486,49 +532,75 @@ function initAdmin() {
         if (!filtered.length) {
             orderTableBody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="text-center">Belum ada pesanan.</td>
+                    <td colspan="9" class="empty-state">
+                        <i class="fas fa-shopping-cart"></i>
+                        <p>Belum ada pesanan.</p>
+                    </td>
                 </tr>`;
             return;
         }
 
         filtered.forEach(order => {
             const tr = document.createElement('tr');
-            const statusClass = getStatusBadgeClass(order.status);
             const tanggal = order.created_at
                 ? new Date(order.created_at).toLocaleString('id-ID')
                 : '-';
 
-            const phone = (order.phone || '').toString().trim();
-            const phoneForWa = phone
-                ? '62' + phone.replace(/^0/, '')
-                : '6283169352889'; // fallback ke nomor toko
+            // Dropdown status
+            const statusOptionsHtml = ORDER_STATUS_LIST.map(s =>
+                `<option value="${s.value}" ${s.value === (order.status || 'pending') ? 'selected' : ''}>
+                    ${s.label}
+                </option>`
+            ).join('');
 
             tr.innerHTML = `
-                <td>${order.id}</td>
+                <td>#${order.id}</td>
                 <td>${order.customer_name || '-'}</td>
+                <td>${order.phone || '-'}</td>
                 <td>${order.product_name || '-'}</td>
                 <td>${order.quantity || 0}</td>
-                <td>${formatRupiah(order.total)}</td>
-                <td><span class="badge ${statusClass}">${order.status || 'pending'}</span></td>
-                <td>${tanggal}</td>
+                <td>${formatRupiah(order.total || 0)}</td>
+                <td>${order.address || '-'}</td>
                 <td>
-                    <button class="btn-table btn-detail" data-id="${order.id}">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <a class="btn-table btn-wa" href="https://wa.me/${phoneForWa}" target="_blank">
-                        <i class="fab fa-whatsapp"></i>
-                    </a>
+                    <div class="status-cell">
+                        <span class="${statusToBadgeClass(order.status || 'pending')} status-label">
+                            ${statusToText(order.status || 'pending')}
+                        </span>
+                        <select class="order-status-select" data-id="${order.id}">
+                            ${statusOptionsHtml}
+                        </select>
+                    </div>
+                </td>
+                <td>
+                    <div class="table-actions">
+                        <button class="btn-icon view btn-detail" data-id="${order.id}">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <a class="btn-icon wa" href="${buildWhatsAppUrlForOrder(order)}" target="_blank" title="Hubungi via WhatsApp">
+                            <i class="fab fa-whatsapp"></i>
+                        </a>
+                    </div>
                 </td>
             `;
             orderTableBody.appendChild(tr);
         });
 
+        // Detail
         orderTableBody.querySelectorAll('.btn-detail').forEach(btn => {
             btn.addEventListener('click', () => {
                 const id = Number(btn.dataset.id);
                 const order = orders.find(o => o.id === id);
                 if (!order) return;
                 openOrderModal(order);
+            });
+        });
+
+        // Change status
+        orderTableBody.querySelectorAll('.order-status-select').forEach(select => {
+            select.addEventListener('change', async () => {
+                const id = Number(select.dataset.id);
+                const newStatus = select.value;
+                await handleOrderStatusChange(id, newStatus);
             });
         });
     }
@@ -538,16 +610,18 @@ function initAdmin() {
     }
 
     function openOrderModal(order) {
+        if (!orderModal || !orderDetailContent) return;
+
         orderDetailContent.innerHTML = `
-            <p><strong>ID Pesanan:</strong> ${order.id}</p>
+            <p><strong>ID Pesanan:</strong> #${order.id}</p>
             <p><strong>Nama Pelanggan:</strong> ${order.customer_name || '-'}</p>
             <p><strong>No. HP:</strong> ${order.phone || '-'}</p>
             <p><strong>Produk:</strong> ${order.product_name || '-'}</p>
             <p><strong>Jumlah:</strong> ${order.quantity || 0}</p>
-            <p><strong>Total:</strong> ${formatRupiah(order.total)}</p>
+            <p><strong>Total:</strong> ${formatRupiah(order.total || 0)}</p>
             <p><strong>Alamat:</strong> ${order.address || '-'}</p>
-            <p><strong>Status:</strong> ${order.status || 'pending'}</p>
-            <p><strong>Tanggal:</strong> ${order.created_at ? new Date(order.created_at).toLocaleString('id-ID') : '-'}</p>
+            <p><strong>Status:</strong> ${statusToText(order.status || 'pending')}</p>
+            <p><strong>Waktu Pesan:</strong> ${order.created_at ? new Date(order.created_at).toLocaleString('id-ID') : '-'}</p>
         `;
         orderModal.classList.add('active');
         modalOverlay.classList.add('active');
@@ -557,24 +631,114 @@ function initAdmin() {
         closeOrderModalBtn.addEventListener('click', closeAllModals);
     }
 
+    // ====== LOGIKA PERUBAHAN STATUS + SINKRONISASI STOK ======
+    async function handleOrderStatusChange(orderId, newStatus) {
+        const order = orders.find(o => o.id === orderId);
+        if (!order) return;
+
+        const oldStatus = order.status || 'pending';
+        if (oldStatus === newStatus) return;
+
+        const wasCountedBefore = isStockCountedStatus(oldStatus);
+        const willBeCountedAfter = isStockCountedStatus(newStatus);
+
+        let needDeduct = !wasCountedBefore && willBeCountedAfter;
+        let needRestock = wasCountedBefore && newStatus === 'cancelled';
+
+        // Cari produk terkait
+        let product = null;
+        if (needDeduct || needRestock) {
+            product =
+                products.find(p => p.id === order.product_id) ||
+                products.find(p => p.name === order.product_name);
+            if (!product) {
+                alert('Produk terkait pesanan ini tidak ditemukan. Stok tidak dapat disesuaikan.');
+                // Jangan lanjut ubah status, biar stok nggak kacau
+                // Kalau mau tetap lanjut, hapus "return" di bawah
+                return;
+            }
+        }
+
+        // Validasi stok sebelum dikurangi
+        if (needDeduct) {
+            if (product.stock == null) {
+                alert('Stok produk belum diatur. Silakan set stok dulu sebelum memproses pesanan.');
+                return;
+            }
+            if (product.stock < order.quantity) {
+                alert('Stok tidak mencukupi untuk memproses pesanan ini.');
+                return;
+            }
+        }
+
+        try {
+            // Update stok produk dulu (kalau perlu)
+            if (needDeduct) {
+                const newStock = product.stock - order.quantity;
+                const productPayload = {
+                    stock: newStock,
+                    status: newStock <= 0 ? 'inactive' : (product.status || 'active')
+                };
+                const { error: prodError } = await supabase
+                    .from('products')
+                    .update(productPayload)
+                    .eq('id', product.id);
+                if (prodError) throw prodError;
+            } else if (needRestock) {
+                const currentStock = product.stock == null ? 0 : product.stock;
+                const newStock = currentStock + order.quantity;
+                const productPayload = {
+                    stock: newStock,
+                    status: 'active'
+                };
+                const { error: prodError } = await supabase
+                    .from('products')
+                    .update(productPayload)
+                    .eq('id', product.id);
+                if (prodError) throw prodError;
+            }
+
+            // Update status pesanan
+            const { error: orderError } = await supabase
+                .from('orders')
+                .update({ status: newStatus })
+                .eq('id', order.id);
+            if (orderError) throw orderError;
+
+            alert('Status pesanan berhasil diperbarui.');
+
+            // Refresh lokal
+            await fetchProducts();
+            await fetchOrders();
+            renderProductTable();
+            renderOrderTable();
+            updateDashboard();
+        } catch (err) {
+            console.error('Gagal mengubah status pesanan:', err);
+            alert('Gagal mengubah status pesanan:\n' + err.message);
+        }
+    }
+
     // ====== DASHBOARD ======
     function updateDashboard() {
-        const totalProduk = products.length;
-        const totalPesanan = orders.length;
-        const stokRendah = products.filter(p => (p.stock || 0) > 0 && p.stock <= 10).length;
-        const totalPendapatan = orders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+        const activeProducts = products.filter(p => (p.status || 'active') === 'active');
+        const lowStock = products.filter(p => (p.stock || 0) > 0 && p.stock <= 10);
+        const totalRevenue = orders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
 
-        if (totalProdukEl) totalProdukEl.textContent = totalProduk;
-        if (totalPesananEl) totalPesananEl.textContent = totalPesanan;
-        if (stokRendahEl) stokRendahEl.textContent = stokRendah;
-        if (totalPendapatanEl) totalPendapatanEl.textContent = formatRupiah(totalPendapatan);
+        if (totalProdukEl) totalProdukEl.textContent = activeProducts.length;
+        if (totalPesananEl) totalPesananEl.textContent = orders.length;
+        if (stokRendahEl) stokRendahEl.textContent = lowStock.length;
+        if (totalPendapatanEl) totalPendapatanEl.textContent = formatRupiah(totalRevenue);
 
         if (topProductsEl) {
-            if (!products.length) {
-                topProductsEl.innerHTML = '<p class="empty-state">Belum ada produk.</p>';
+            if (!activeProducts.length) {
+                topProductsEl.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-box"></i>
+                        <p>Belum ada produk aktif.</p>
+                    </div>`;
             } else {
-                topProductsEl.innerHTML = products
-                    .filter(p => (p.status || 'active') !== 'inactive')
+                topProductsEl.innerHTML = activeProducts
                     .slice(0, 5)
                     .map(p => `
                         <div class="product-item">
@@ -587,7 +751,11 @@ function initAdmin() {
 
         if (recentOrdersEl) {
             if (!orders.length) {
-                recentOrdersEl.innerHTML = '<p class="empty-state">Belum ada pesanan.</p>';
+                recentOrdersEl.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-shopping-cart"></i>
+                        <p>Belum ada pesanan.</p>
+                    </div>`;
             } else {
                 recentOrdersEl.innerHTML = orders
                     .slice(0, 5)
@@ -598,8 +766,10 @@ function initAdmin() {
                                 <p>${o.product_name || '-'}</p>
                             </div>
                             <div>
-                                <span class="badge ${getStatusBadgeClass(o.status)}">${o.status || 'pending'}</span>
-                                <p>${formatRupiah(o.total)}</p>
+                                <span class="${statusToBadgeClass(o.status || 'pending')}">
+                                    ${statusToText(o.status || 'pending')}
+                                </span>
+                                <p>${formatRupiah(o.total || 0)}</p>
                             </div>
                         </div>
                     `).join('');
@@ -628,7 +798,7 @@ function initAdmin() {
         });
     }
 
-    // ====== UBAH PASSWORD VIA SUPABASE AUTH ======
+    // ====== UBAH PASSWORD (Supabase Auth) ======
     if (changePasswordForm) {
         changePasswordForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -730,7 +900,7 @@ function initAdmin() {
     // ====== BOOTSTRAP AWAL ======
     (async () => {
         const user = await requireAuth();
-        if (!user) return; // sudah di-redirect kalau tidak login
+        if (!user) return;
 
         await fetchProducts();
         await fetchOrders();
@@ -741,7 +911,7 @@ function initAdmin() {
     })();
 }
 
-// Mulai
+// Start init
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initAdmin);
 } else {
