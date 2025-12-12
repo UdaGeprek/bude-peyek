@@ -1,7 +1,6 @@
 // admin-script.js
-// Admin Dashboard Bude Peyek – pakai Supabase Auth (tanpa sessionStorage login check)
+// Admin Dashboard Bude Peyek – Supabase Auth + Products/Orders
 
-// Inisialisasi setelah Supabase client siap
 function initAdmin() {
     if (!window.supabaseClient) {
         console.log('⏳ Menunggu Supabase client...');
@@ -15,6 +14,7 @@ function initAdmin() {
     // ====== STATE ======
     let products = [];
     let orders = [];
+    let currentProductId = null;
 
     // ====== UTIL ======
     const formatRupiah = (value) => {
@@ -38,7 +38,7 @@ function initAdmin() {
         }
     };
 
-    // ====== AUTH CHECK (HANYA SUPABASE AUTH) ======
+    // ====== AUTH CHECK – hanya via Supabase Auth ======
     async function requireAuth() {
         try {
             const { data, error } = await supabase.auth.getUser();
@@ -55,7 +55,7 @@ function initAdmin() {
         }
     }
 
-    // ====== DOM ======
+    // ====== DOM CACHE ======
     const navLinks = document.querySelectorAll('.nav-item');
     const pages = document.querySelectorAll('.admin-page');
     const pageTitle = document.getElementById('pageTitle');
@@ -67,8 +67,17 @@ function initAdmin() {
     const closeModalBtn = document.getElementById('closeModal');
     const cancelBtn = document.getElementById('cancelBtn');
     const productForm = document.getElementById('productForm');
-    const imagePreview = document.getElementById('imagePreview');
+    const productIdInput = document.getElementById('productId');
+    const productNameInput = document.getElementById('productName');
+    const productDescriptionInput = document.getElementById('productDescription');
+    const productPriceInput = document.getElementById('productPrice');
+    const productStockInput = document.getElementById('productStock');
+    const productIconInput = document.getElementById('productIcon');
+    const productBadgeCheckbox = document.getElementById('productBadge');
+    const badgeTextGroup = document.getElementById('badgeTextGroup');
+    const badgeTextInput = document.getElementById('badgeText');
     const productImageInput = document.getElementById('productImage');
+    const imagePreview = document.getElementById('imagePreview');
 
     const orderTableBody = document.getElementById('orderTableBody');
     const filterStatusSelect = document.getElementById('filterStatus');
@@ -88,10 +97,7 @@ function initAdmin() {
     const adminNameEl = document.getElementById('adminName');
     const logoutBtn = document.getElementById('logoutBtn');
     const menuToggle = document.getElementById('menuToggle');
-
     const changePasswordForm = document.getElementById('changePasswordForm');
-
-    let currentProductId = null;
 
     // ====== NAVIGASI HALAMAN ======
     function showPage(page) {
@@ -109,7 +115,7 @@ function initAdmin() {
             pesanan: 'Riwayat Pesanan',
             settings: 'Pengaturan'
         };
-        pageTitle.textContent = mapTitle[page] || 'Dashboard';
+        if (pageTitle) pageTitle.textContent = mapTitle[page] || 'Dashboard';
     }
 
     navLinks.forEach(link => {
@@ -154,7 +160,7 @@ function initAdmin() {
         }
     }
 
-    // ====== PRODUK: TABEL & MODAL ======
+    // ====== PRODUK: TABEL ======
     function renderProductTable() {
         if (!productTableBody) return;
 
@@ -171,15 +177,33 @@ function initAdmin() {
         products.forEach((p) => {
             const tr = document.createElement('tr');
             const stockDisplay = (p.stock ?? '') === '' ? '-' : p.stock;
+            const iconClass = p.icon || 'fa-cookie-bite';
+            const badgeHtml = p.badge
+                ? `<span class="badge badge-warning">${p.badge}</span>`
+                : '';
 
             tr.innerHTML = `
-                <td>${p.id}</td>
-                <td>${p.name || '-'}</td>
+                <td>
+                    <div class="product-image-cell">
+                        ${
+                            p.image_url
+                                ? `<img src="${p.image_url}" alt="${p.name || ''}">`
+                                : `<div class="product-icon-fallback"><i class="fas ${iconClass}"></i></div>`
+                        }
+                    </div>
+                </td>
+                <td>
+                    <div class="product-info-cell">
+                        <strong>${p.name || '-'}</strong>
+                        ${badgeHtml}
+                        <p>${p.description || ''}</p>
+                    </div>
+                </td>
                 <td>${formatRupiah(p.price)}</td>
                 <td>${stockDisplay}</td>
                 <td>
-                    <span class="badge ${getStatusBadgeClass(p.status)}">
-                        ${p.status || 'inactive'}
+                    <span class="badge ${getStatusBadgeClass(p.status || 'active')}">
+                        ${p.status || 'active'}
                     </span>
                 </td>
                 <td>
@@ -194,6 +218,7 @@ function initAdmin() {
             productTableBody.appendChild(tr);
         });
 
+        // Binding tombol EDIT
         productTableBody.querySelectorAll('.btn-edit').forEach(btn => {
             btn.addEventListener('click', () => {
                 const id = Number(btn.dataset.id);
@@ -201,6 +226,7 @@ function initAdmin() {
             });
         });
 
+        // Binding tombol DELETE
         productTableBody.querySelectorAll('.btn-delete').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const id = Number(btn.dataset.id);
@@ -228,14 +254,25 @@ function initAdmin() {
         });
     }
 
-    function openAddProductModal() {
-        currentProductId = null;
-        document.getElementById('modalTitle').textContent = 'Tambah Produk';
+    // ====== PRODUK: MODAL ======
+    function resetProductForm() {
+        if (!productForm) return;
         productForm.reset();
-        document.getElementById('productId').value = '';
+        currentProductId = null;
+        if (productIdInput) productIdInput.value = '';
+        if (productIconInput) productIconInput.value = '';
+        if (productBadgeCheckbox) productBadgeCheckbox.checked = false;
+        if (badgeTextInput) badgeTextInput.value = '';
+        if (badgeTextGroup) badgeTextGroup.style.display = 'none';
         if (imagePreview) {
             imagePreview.innerHTML = '<i class="fas fa-image"></i><p>Klik untuk upload gambar</p>';
         }
+    }
+
+    function openAddProductModal() {
+        resetProductForm();
+        const titleEl = document.getElementById('modalTitle');
+        if (titleEl) titleEl.textContent = 'Tambah Produk';
         productModal.classList.add('active');
         modalOverlay.classList.add('active');
     }
@@ -246,42 +283,63 @@ function initAdmin() {
             alert('Produk tidak ditemukan.');
             return;
         }
+
+        resetProductForm();
         currentProductId = id;
-        document.getElementById('modalTitle').textContent = 'Edit Produk';
 
-        document.getElementById('productId').value = p.id;
-        document.getElementById('productName').value = p.name || '';
-        document.getElementById('productDescription').value = p.description || '';
-        document.getElementById('productPrice').value = p.price || 0;
-        document.getElementById('productStock').value = p.stock ?? '';
-        document.getElementById('productStatus').value = p.status || 'active';
-        document.getElementById('badgeText').value = p.badge || '';
+        const titleEl = document.getElementById('modalTitle');
+        if (titleEl) titleEl.textContent = 'Edit Produk';
 
-        if (p.image_url && imagePreview) {
-            imagePreview.innerHTML = `<img src="${p.image_url}" alt="${p.name}">`;
-        } else if (imagePreview) {
-            imagePreview.innerHTML = '<i class="fas fa-image"></i><p>Klik untuk upload gambar</p>';
+        if (productIdInput) productIdInput.value = p.id;
+        if (productNameInput) productNameInput.value = p.name || '';
+        if (productDescriptionInput) productDescriptionInput.value = p.description || '';
+        if (productPriceInput) productPriceInput.value = p.price || 0;
+        if (productStockInput) productStockInput.value = p.stock ?? '';
+        if (productIconInput) productIconInput.value = p.icon || '';
+
+        if (productBadgeCheckbox) {
+            productBadgeCheckbox.checked = !!p.badge;
+            if (badgeTextGroup) {
+                badgeTextGroup.style.display = p.badge ? 'block' : 'none';
+            }
+        }
+        if (badgeTextInput) badgeTextInput.value = p.badge || '';
+
+        if (imagePreview) {
+            if (p.image_url) {
+                imagePreview.innerHTML = `<img src="${p.image_url}" alt="${p.name || ''}">`;
+            } else {
+                imagePreview.innerHTML = '<i class="fas fa-image"></i><p>Klik untuk upload gambar</p>';
+            }
         }
 
         productModal.classList.add('active');
         modalOverlay.classList.add('active');
     }
 
-    function closeProductModal() {
+    function closeAllModals() {
         productModal.classList.remove('active');
         orderModal.classList.remove('active');
         modalOverlay.classList.remove('active');
     }
 
     if (addProductBtn) addProductBtn.addEventListener('click', openAddProductModal);
-    if (closeModalBtn) closeModalBtn.addEventListener('click', closeProductModal);
-    if (cancelBtn) cancelBtn.addEventListener('click', closeProductModal);
+    if (closeModalBtn) closeModalBtn.addEventListener('click', closeAllModals);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeAllModals);
     if (modalOverlay) {
         modalOverlay.addEventListener('click', (e) => {
-            if (e.target === modalOverlay) closeProductModal();
+            if (e.target === modalOverlay) closeAllModals();
         });
     }
 
+    // Badge show/hide
+    if (productBadgeCheckbox && badgeTextGroup) {
+        productBadgeCheckbox.addEventListener('change', () => {
+            badgeTextGroup.style.display = productBadgeCheckbox.checked ? 'block' : 'none';
+        });
+    }
+
+    // Image picker & preview
     if (imagePreview && productImageInput) {
         imagePreview.addEventListener('click', () => {
             productImageInput.click();
@@ -335,15 +393,16 @@ function initAdmin() {
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
             }
 
-            const idHidden = document.getElementById('productId').value;
-            const name = document.getElementById('productName').value.trim();
-            const description = document.getElementById('productDescription').value.trim();
-            const price = Number(document.getElementById('productPrice').value) || 0;
-            const stock = document.getElementById('productStock').value === ''
+            const name = productNameInput.value.trim();
+            const description = productDescriptionInput.value.trim();
+            const price = Number(productPriceInput.value) || 0;
+            const stock = productStockInput.value === ''
                 ? null
-                : Number(document.getElementById('productStock').value);
-            const status = document.getElementById('productStatus').value;
-            const badge = document.getElementById('badgeText').value.trim();
+                : Number(productStockInput.value);
+            const icon = productIconInput.value.trim() || null;
+            const badgeChecked = productBadgeCheckbox && productBadgeCheckbox.checked;
+            const badgeText = badgeTextInput.value.trim();
+            const badge = badgeChecked ? (badgeText || 'Best Seller') : null;
             const file = productImageInput.files[0];
 
             if (!name || !price) {
@@ -372,17 +431,19 @@ function initAdmin() {
                 description,
                 price,
                 stock,
-                status,
-                badge: badge || null
+                icon,
+                badge,
+                status: 'active'
             };
             if (image_url) payload.image_url = image_url;
 
             try {
-                if (idHidden) {
+                if (currentProductId || productIdInput.value) {
+                    const id = Number(currentProductId || productIdInput.value);
                     const { error } = await supabase
                         .from('products')
                         .update(payload)
-                        .eq('id', Number(idHidden));
+                        .eq('id', id);
                     if (error) throw error;
                     alert('Produk berhasil diperbarui.');
                 } else {
@@ -396,7 +457,7 @@ function initAdmin() {
                 await fetchProducts();
                 renderProductTable();
                 updateDashboard();
-                closeProductModal();
+                closeAllModals();
             } catch (err) {
                 console.error('Gagal simpan produk:', err);
                 alert('Gagal menyimpan produk:\n' + err.message);
@@ -493,7 +554,7 @@ function initAdmin() {
     }
 
     if (closeOrderModalBtn) {
-        closeOrderModalBtn.addEventListener('click', closeProductModal);
+        closeOrderModalBtn.addEventListener('click', closeAllModals);
     }
 
     // ====== DASHBOARD ======
@@ -513,7 +574,7 @@ function initAdmin() {
                 topProductsEl.innerHTML = '<p class="empty-state">Belum ada produk.</p>';
             } else {
                 topProductsEl.innerHTML = products
-                    .filter(p => p.status !== 'inactive')
+                    .filter(p => (p.status || 'active') !== 'inactive')
                     .slice(0, 5)
                     .map(p => `
                         <div class="product-item">
@@ -666,10 +727,10 @@ function initAdmin() {
         }
     })();
 
-    // ====== BOOTSTRAP ======
+    // ====== BOOTSTRAP AWAL ======
     (async () => {
         const user = await requireAuth();
-        if (!user) return; // sudah di-redirect
+        if (!user) return; // sudah di-redirect kalau tidak login
 
         await fetchProducts();
         await fetchOrders();
