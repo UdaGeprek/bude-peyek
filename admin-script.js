@@ -21,7 +21,63 @@ function initAdmin() {
     // State variables
     let products = [];
     let orders = [];
-    let currentProductId = null;
+    let selectedProductId = null;
+
+    // === DOM ELEMENTS ===
+    const productForm = document.getElementById('productForm');
+    const productTableBody = document.getElementById('productTableBody');
+    const productModal = document.getElementById('productModal');
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalTitle = document.getElementById('modalTitle');
+    const btnAddProduct = document.getElementById('btnAddProduct');
+    const btnCloseModal = document.getElementById('btnCloseModal');
+    const btnCancelModal = document.getElementById('btnCancelModal');
+    const productImagePreview = document.getElementById('productImagePreview');
+    const productImageInput = document.getElementById('productImage');
+
+    const dashboardTotalProducts = document.getElementById('dashboardTotalProducts');
+    const dashboardTotalOrders = document.getElementById('dashboardTotalOrders');
+    const dashboardTotalRevenue = document.getElementById('dashboardTotalRevenue');
+    const dashboardLatestOrder = document.getElementById('dashboardLatestOrder');
+
+    const orderTableBody = document.getElementById('orderTableBody');
+    const filterStatus = document.getElementById('filterStatus');
+    const filterDate = document.getElementById('filterDate');
+
+    const menuItems = document.querySelectorAll('.sidebar-menu li');
+    const sections = document.querySelectorAll('.admin-section');
+
+    // Helper: format rupiah
+    function formatRupiah(amount) {
+        if (!amount) amount = 0;
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0
+        }).format(amount);
+    }
+
+    // Helper: show section
+    function showSection(sectionId) {
+        sections.forEach(section => {
+            section.style.display = section.id === sectionId ? 'block' : 'none';
+        });
+
+        menuItems.forEach(item => {
+            item.classList.toggle('active', item.dataset.target === sectionId);
+        });
+    }
+
+    // Initialize default section
+    showSection('dashboardSection');
+
+    // Sidebar menu click handler
+    menuItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const target = item.dataset.target;
+            showSection(target);
+        });
+    });
 
     // ==================== PRODUCTS ====================
 
@@ -31,50 +87,265 @@ function initAdmin() {
             const { data, error } = await supabase
                 .from('products')
                 .select('*')
-                .order('id', { ascending: true });
+                .order('created_at', { ascending: false });
 
             if (error) throw error;
+
             products = data || [];
-        } catch (error) {
-            console.error('Error loading products:', error);
-            alert('Gagal memuat produk: ' + error.message);
+            renderProductTable();
+            updateDashboard();
+        } catch (err) {
+            console.error('Error loading products:', err);
+            alert('Gagal memuat data produk dari server.');
         }
     }
 
-    // Save/Update product to Supabase
-    async function saveProductToDB(productData, productId = null) {
+    function renderProductTable() {
+        productTableBody.innerHTML = '';
+
+        if (!products || products.length === 0) {
+            productTableBody.innerHTML = `
+                <tr>
+                    <td colspan="8" style="text-align:center;">Belum ada produk.</td>
+                </tr>
+            `;
+            return;
+        }
+
+        products.forEach((product, index) => {
+            const tr = document.createElement('tr');
+
+            tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td>
+                    <div class="product-info">
+                        <div>
+                            <strong>${product.name}</strong><br>
+                            <small>${product.description || '-'}</small>
+                        </div>
+                    </div>
+                </td>
+                <td>${formatRupiah(product.price)}</td>
+                <td>${product.unit || 'pack'}</td>
+                <td>${product.stock ?? '-'}</td>
+                <td>
+                    <span class="badge ${product.status === 'active' ? 'badge-success' : 'badge-secondary'}">
+                        ${product.status === 'active' ? 'Aktif' : 'Non-aktif'}
+                    </span>
+                </td>
+                <td>
+                    ${product.badge ? `<span class="badge badge-warning">${product.badge}</span>` : '-'}
+                </td>
+                <td>
+                    <button class="btn-table btn-edit" data-id="${product.id}">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-table btn-delete" data-id="${product.id}">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </td>
+            `;
+
+            productTableBody.appendChild(tr);
+        });
+
+        // Add event listeners for edit & delete buttons
+        document.querySelectorAll('.btn-edit').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const productId = btn.getAttribute('data-id');
+                openEditProductModal(productId);
+            });
+        });
+
+        document.querySelectorAll('.btn-delete').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const productId = btn.getAttribute('data-id');
+                deleteProduct(productId);
+            });
+        });
+    }
+
+    function openAddProductModal() {
+        selectedProductId = null;
+        modalTitle.textContent = 'Tambah Produk Baru';
+        productForm.reset();
+        productImagePreview.innerHTML = '<span>Preview gambar produk</span>';
+        openModal();
+    }
+
+    function openEditProductModal(productId) {
+        selectedProductId = productId;
+        const product = products.find(p => String(p.id) === String(productId));
+
+        if (!product) {
+            alert('Produk tidak ditemukan.');
+            return;
+        }
+
+        modalTitle.textContent = 'Edit Produk';
+        
+        document.getElementById('productName').value = product.name;
+        document.getElementById('productDescription').value = product.description || '';
+        document.getElementById('productPrice').value = product.price || 0;
+        document.getElementById('productUnit').value = product.unit || 'pack';
+        document.getElementById('productStock').value = product.stock ?? '';
+        document.getElementById('productStatus').value = product.status || 'active';
+        document.getElementById('productBadge').value = product.badge || '';
+        document.getElementById('productIcon').value = product.icon || 'fa-cookie';
+
+        if (product.image_url) {
+            productImagePreview.innerHTML = `
+                <img src="${product.image_url}" alt="${product.name}">
+            `;
+        } else {
+            productImagePreview.innerHTML = '<span>Preview gambar produk</span>';
+        }
+
+        openModal();
+    }
+
+    function openModal() {
+        productModal.classList.add('active');
+        modalOverlay.classList.add('active');
+        document.body.classList.add('no-scroll');
+    }
+
+    function closeModal() {
+        productModal.classList.remove('active');
+        modalOverlay.classList.remove('active');
+        document.body.classList.remove('no-scroll');
+    }
+
+    // Handle modal buttons
+    btnAddProduct.addEventListener('click', openAddProductModal);
+    btnCloseModal.addEventListener('click', closeModal);
+    btnCancelModal.addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', closeModal);
+
+    // Handle image preview
+    productImageInput.addEventListener('change', function() {
+        const file = this.files[0];
+
+        if (file) {
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                productImagePreview.innerHTML = `
+                    <img src="${e.target.result}" alt="Preview Produk">
+                `;
+            };
+
+            reader.readAsDataURL(file);
+        } else {
+            productImagePreview.innerHTML = '<span>Preview gambar produk</span>';
+        }
+    });
+
+    async function uploadImageToSupabase(file) {
+        if (!file) return null;
+
         try {
-            if (productId) {
-                // Update existing product
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+            const filePath = `product-images/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('product-images')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data: publicUrlData } = supabase.storage
+                .from('product-images')
+                .getPublicUrl(filePath);
+
+            return publicUrlData.publicUrl;
+        } catch (err) {
+            console.error('Error uploading image:', err);
+            alert('Gagal mengupload gambar. Pastikan bucket storage sudah disiapkan.');
+            return null;
+        }
+    }
+
+    productForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const productName = document.getElementById('productName').value.trim();
+        const productDescription = document.getElementById('productDescription').value.trim();
+        const productPrice = parseInt(document.getElementById('productPrice').value) || 0;
+        const productUnit = document.getElementById('productUnit').value;
+        const productStock = parseInt(document.getElementById('productStock').value) || 0;
+        const productStatus = document.getElementById('productStatus').value;
+        const productBadge = document.getElementById('productBadge').value.trim();
+        const productIcon = document.getElementById('productIcon').value;
+        const imageFile = productImageInput.files[0];
+
+        if (!productName || !productPrice) {
+            alert('Nama dan harga produk wajib diisi.');
+            return;
+        }
+
+        let imageUrl = null;
+        if (imageFile) {
+            imageUrl = await uploadImageToSupabase(imageFile);
+            if (!imageUrl) return;
+        }
+
+        const productData = {
+            name: productName,
+            description: productDescription,
+            price: productPrice,
+            unit: productUnit,
+            stock: productStock,
+            status: productStatus,
+            badge: productBadge || null,
+            icon: productIcon || 'fa-cookie'
+        };
+
+        if (imageUrl) {
+            productData.image_url = imageUrl;
+        }
+
+        try {
+            if (selectedProductId) {
                 const { error } = await supabase
                     .from('products')
                     .update({
                         ...productData,
                         updated_at: new Date().toISOString()
                     })
-                    .eq('id', productId);
+                    .eq('id', selectedProductId);
 
                 if (error) throw error;
+                alert('Produk berhasil diperbarui!');
             } else {
-                // Insert new product
                 const { error } = await supabase
                     .from('products')
                     .insert([productData]);
 
                 if (error) throw error;
+                alert('Produk baru berhasil ditambahkan!');
             }
 
             await loadProductsFromDB();
-            return true;
-        } catch (error) {
-            console.error('Error saving product:', error);
-            alert('Gagal menyimpan produk: ' + error.message);
-            return false;
+            closeModal();
+        } catch (err) {
+            console.error('Error saving product:', err);
+            alert('Gagal menyimpan data produk.');
         }
-    }
+    });
 
-    // Delete product from Supabase
-    async function deleteProductFromDB(productId) {
+    async function deleteProduct(productId) {
+        const product = products.find(p => String(p.id) === String(productId));
+        if (!product) {
+            alert('Produk tidak ditemukan.');
+            return;
+        }
+
+        if (!confirm(`Yakin ingin menghapus produk "${product.name}"?`)) {
+            return;
+        }
+
         try {
             const { error } = await supabase
                 .from('products')
@@ -83,48 +354,16 @@ function initAdmin() {
 
             if (error) throw error;
 
+            alert('Produk berhasil dihapus.');
             await loadProductsFromDB();
-            return true;
-        } catch (error) {
-            console.error('Error deleting product:', error);
-            alert('Gagal menghapus produk: ' + error.message);
-            return false;
-        }
-    }
-
-    // Upload image to Supabase Storage
-    async function uploadImageToStorage(file) {
-        try {
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-            const filePath = `products/${fileName}`;
-
-            const { data, error } = await supabase.storage
-                .from('product-images')
-                .upload(filePath, file);
-
-            if (error) throw error;
-
-            // Get public URL
-            const { data: urlData } = supabase.storage
-                .from('product-images')
-                .getPublicUrl(filePath);
-
-            return urlData.publicUrl;
-        } catch (error) {
-            console.error('Error uploading image:', error);
-            // Fallback to Base64 if storage fails
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result);
-                reader.readAsDataURL(file);
-            });
+        } catch (err) {
+            console.error('Error deleting product:', err);
+            alert('Gagal menghapus produk.');
         }
     }
 
     // ==================== ORDERS ====================
 
-    // Load orders from Supabase
     async function loadOrdersFromDB() {
         try {
             const { data, error } = await supabase
@@ -133,390 +372,166 @@ function initAdmin() {
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
+
             orders = data || [];
-        } catch (error) {
-            console.error('Error loading orders:', error);
-            alert('Gagal memuat pesanan: ' + error.message);
+            renderOrderTable();
+            updateDashboard();
+        } catch (err) {
+            console.error('Error loading orders:', err);
+            alert('Gagal memuat data pesanan.');
         }
     }
 
-    // Delete order from Supabase
-    async function deleteOrderFromDB(orderId) {
-        try {
-            const { error } = await supabase
-                .from('orders')
-                .delete()
-                .eq('id', orderId);
+    function renderOrderTable() {
+        orderTableBody.innerHTML = '';
 
-            if (error) throw error;
-
-            await loadOrdersFromDB();
-            return true;
-        } catch (error) {
-            console.error('Error deleting order:', error);
-            alert('Gagal menghapus pesanan: ' + error.message);
-            return false;
-        }
-    }
-
-    // ==================== UI FUNCTIONS ====================
-
-    // Utility Functions
-    function formatCurrency(amount) {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0
-        }).format(amount);
-    }
-
-    function getStatusText(status) {
-        const statusMap = {
-            'pending': 'Pending',
-            'processing': 'Diproses',
-            'completed': 'Selesai',
-            'cancelled': 'Dibatalkan'
-        };
-        return statusMap[status] || status;
-    }
-
-    // Dashboard
-    function loadDashboard() {
-        const activeProducts = products.filter(p => p.status === 'active');
-        const lowStock = products.filter(p => p.stock < 10);
-        const totalRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);
-
-        document.getElementById('totalProduk').textContent = activeProducts.length;
-        document.getElementById('totalPesanan').textContent = orders.length;
-        document.getElementById('stokRendah').textContent = lowStock.length;
-        document.getElementById('totalPendapatan').textContent = formatCurrency(totalRevenue);
-
-        // Top products
-        const topProductsHtml = activeProducts.slice(0, 5).map(product => `
-            <div class="product-item">
-                <span>${product.name}</span>
-                <span>${formatCurrency(product.price)}</span>
-            </div>
-        `).join('');
-        document.getElementById('topProducts').innerHTML = topProductsHtml || 
-            '<div class="empty-state"><i class="fas fa-box"></i><p>Belum ada produk</p></div>';
-
-        // Recent orders
-        const recentOrdersHtml = orders.slice(0, 5).map(order => `
-            <div class="order-item">
-                <span>${order.customer_name}</span>
-                <span>${new Date(order.created_at).toLocaleDateString('id-ID')}</span>
-            </div>
-        `).join('');
-        document.getElementById('recentOrders').innerHTML = recentOrdersHtml || 
-            '<div class="empty-state"><i class="fas fa-shopping-cart"></i><p>Belum ada pesanan</p></div>';
-    }
-
-    // Load Products Table
-    function loadProducts() {
-        const tbody = document.getElementById('productTableBody');
-
-        if (products.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><i class="fas fa-box"></i><p>Belum ada produk</p></td></tr>';
+        if (!orders || orders.length === 0) {
+            orderTableBody.innerHTML = `
+                <tr>
+                    <td colspan="8" style="text-align:center;">Belum ada pesanan.</td>
+                </tr>
+            `;
             return;
         }
 
-        tbody.innerHTML = products.map(product => `
-            <tr>
-                <td>
-                    ${product.image_url ? 
-                        `<img src="${product.image_url}" alt="${product.name}" class="product-image-cell">` :
-                        `<div class="product-icon-cell"><i class="fas ${product.icon}"></i></div>`
-                    }
-                </td>
-                <td>${product.name}</td>
-                <td>${formatCurrency(product.price)}</td>
-                <td>${product.stock}</td>
-                <td>
-                    <span class="status-badge ${product.status}">
-                        ${product.status === 'active' ? 'Aktif' : 'Nonaktif'}
-                    </span>
-                </td>
-                <td>
-                    <div class="table-actions">
-                        <button class="btn-icon edit" onclick="editProduct(${product.id})">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn-icon delete" onclick="deleteProduct(${product.id})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `).join('');
-    }
-
-    // Load Orders Table
-    function loadOrders() {
-        const tbody = document.getElementById('orderTableBody');
-        const filterStatus = document.getElementById('filterStatus').value;
+        const statusFilter = filterStatus.value;
+        const dateFilter = filterDate.value;
 
         let filteredOrders = orders;
-        if (filterStatus !== 'all') {
-            filteredOrders = orders.filter(o => o.status === filterStatus);
+
+        if (statusFilter) {
+            filteredOrders = filteredOrders.filter(order => order.status === statusFilter);
         }
 
-        if (filteredOrders.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fas fa-shopping-cart"></i><p>Belum ada pesanan</p></td></tr>';
+        if (dateFilter) {
+            const today = new Date();
+            let startDate, endDate;
+
+            if (dateFilter === 'today') {
+                startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+            } else if (dateFilter === 'week') {
+                const firstDayOfWeek = today.getDate() - today.getDay();
+                startDate = new Date(today.getFullYear(), today.getMonth(), firstDayOfWeek);
+                endDate = new Date(today.getFullYear(), today.getMonth(), firstDayOfWeek + 7);
+            } else if (dateFilter === 'month') {
+                startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                endDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+            }
+
+            if (startDate && endDate) {
+                filteredOrders = filteredOrders.filter(order => {
+                    const orderDate = new Date(order.created_at);
+                    return orderDate >= startDate && orderDate < endDate;
+                });
+            }
+        }
+
+        if (!filteredOrders.length) {
+            orderTableBody.innerHTML = `
+                <tr>
+                    <td colspan="8" style="text-align:center;">Tidak ada pesanan yang cocok dengan filter.</td>
+                </tr>
+            `;
             return;
         }
 
-        tbody.innerHTML = filteredOrders.map(order => `
-            <tr>
-                <td>#${order.id}</td>
-                <td>${order.customer_name}</td>
+        filteredOrders.forEach((order, index) => {
+            const tr = document.createElement('tr');
+
+            tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td>
+                    <strong>${order.customer_name}</strong><br>
+                    <small>${order.phone}</small>
+                </td>
                 <td>${order.product_name}</td>
                 <td>${order.quantity}</td>
-                <td>${formatCurrency(order.total)}</td>
+                <td>${formatRupiah(order.total)}</td>
                 <td>
-                    <span class="status-badge ${order.status}">${getStatusText(order.status)}</span>
+                    <span class="badge badge-status">${order.status || 'baru'}</span>
                 </td>
-                <td>${new Date(order.created_at).toLocaleDateString('id-ID')}</td>
+                <td>${new Date(order.created_at).toLocaleString('id-ID')}</td>
                 <td>
-                    <div class="table-actions">
-                        <button class="btn-icon view" onclick="viewOrderGlobal(${order.id})">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="btn-icon delete" onclick="deleteOrderGlobal(${order.id})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
+                    <button class="btn-table btn-detail" data-id="${order.id}">
+                        <i class="fas fa-eye"></i>
+                    </button>
                 </td>
-            </tr>
-        `).join('');
-    }
+            `;
 
-    // Navigation
-    const navItems = document.querySelectorAll('.nav-item');
-    const pages = document.querySelectorAll('.admin-page');
-    const pageTitle = document.getElementById('pageTitle');
-
-    navItems.forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.preventDefault();
-            const page = this.dataset.page;
-
-            navItems.forEach(nav => nav.classList.remove('active'));
-            this.classList.add('active');
-
-            pages.forEach(p => p.classList.remove('active'));
-            document.getElementById(`${page}-page`).classList.add('active');
-
-            pageTitle.textContent = this.querySelector('span').textContent;
-
-            if (page === 'dashboard') loadDashboard();
-            if (page === 'produk') loadProducts();
-            if (page === 'pesanan') loadOrders();
+            orderTableBody.appendChild(tr);
         });
-    });
-
-    // Add Product Button
-    document.getElementById('addProductBtn').addEventListener('click', function() {
-        currentProductId = null;
-        document.getElementById('modalTitle').textContent = 'Tambah Produk';
-        document.getElementById('productForm').reset();
-        document.getElementById('imagePreview').innerHTML = '<i class="fas fa-image"></i><p>Klik untuk upload gambar</p>';
-        document.getElementById('productModal').classList.add('active');
-    });
-
-    // Image upload
-    document.getElementById('imagePreview').addEventListener('click', function() {
-        document.getElementById('productImage').click();
-    });
-
-    document.getElementById('productImage').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                document.getElementById('imagePreview').innerHTML = 
-                    `<img src="${event.target.result}" alt="Preview">`;
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-
-    // Badge checkbox
-    document.getElementById('productBadge').addEventListener('change', function() {
-        document.getElementById('badgeTextGroup').style.display = this.checked ? 'block' : 'none';
-    });
-
-    // Product Form Submit
-    document.getElementById('productForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-
-        const submitBtn = this.querySelector('button[type="submit"]');
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
-
-        try {
-            let imageUrl = null;
-            const imageInput = document.getElementById('productImage');
-
-            // Upload image if new file selected
-            if (imageInput.files && imageInput.files[0]) {
-                imageUrl = await uploadImageToStorage(imageInput.files[0]);
-            } else if (currentProductId) {
-                // Keep existing image
-                const existingProduct = products.find(p => p.id === currentProductId);
-                imageUrl = existingProduct?.image_url;
-            }
-
-            const productData = {
-                name: document.getElementById('productName').value,
-                description: document.getElementById('productDescription').value,
-                price: parseInt(document.getElementById('productPrice').value),
-                stock: parseInt(document.getElementById('productStock').value),
-                icon: document.getElementById('productIcon').value || 'fa-box',
-                badge: document.getElementById('productBadge').checked ? 
-                       (document.getElementById('badgeText').value || null) : null,
-                image_url: imageUrl,
-                status: 'active'
-            };
-
-            const success = await saveProductToDB(productData, currentProductId);
-
-            if (success) {
-                loadProducts();
-                closeModal();
-                alert('Produk berhasil disimpan!');
-            }
-        } catch (error) {
-            alert('Gagal menyimpan produk: ' + error.message);
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-save"></i> Simpan';
-        }
-    });
-
-    // Edit Product - Expose to global
-    window.editProduct = function(id) {
-        const product = products.find(p => p.id === id);
-        if (!product) return;
-
-        currentProductId = id;
-        document.getElementById('modalTitle').textContent = 'Edit Produk';
-        document.getElementById('productName').value = product.name;
-        document.getElementById('productDescription').value = product.description || '';
-        document.getElementById('productPrice').value = product.price;
-        document.getElementById('productStock').value = product.stock;
-        document.getElementById('productIcon').value = product.icon || '';
-        document.getElementById('productBadge').checked = !!product.badge;
-        document.getElementById('badgeText').value = product.badge || '';
-        document.getElementById('badgeTextGroup').style.display = product.badge ? 'block' : 'none';
-
-        if (product.image_url) {
-            document.getElementById('imagePreview').innerHTML = 
-                `<img src="${product.image_url}" alt="Preview">`;
-        } else {
-            document.getElementById('imagePreview').innerHTML = 
-                '<i class="fas fa-image"></i><p>Klik untuk upload gambar</p>';
-        }
-
-        document.getElementById('productModal').classList.add('active');
-    };
-
-    // Delete Product - Expose to global
-    window.deleteProduct = async function(id) {
-        if (confirm('Yakin ingin menghapus produk ini?')) {
-            const success = await deleteProductFromDB(id);
-            if (success) {
-                loadProducts();
-                alert('Produk berhasil dihapus!');
-            }
-        }
-    };
-
-    // Modal Close
-    function closeModal() {
-        document.getElementById('productModal').classList.remove('active');
     }
 
-    document.getElementById('closeModal').addEventListener('click', closeModal);
-    document.getElementById('cancelBtn').addEventListener('click', closeModal);
+    filterStatus.addEventListener('change', renderOrderTable);
+    filterDate.addEventListener('change', renderOrderTable);
 
-    document.getElementById('productModal').addEventListener('click', function(e) {
-        if (e.target === this) closeModal();
-    });
+    // ==================== DASHBOARD ====================
 
-    // Filter orders
-    document.getElementById('filterStatus').addEventListener('change', loadOrders);
+    function updateDashboard() {
+        dashboardTotalProducts.textContent = products.length;
 
-    // View Order - Expose to global
-    window.viewOrderGlobal = function(id) {
-        const order = orders.find(o => o.id === id);
-        if (!order) return;
+        dashboardTotalOrders.textContent = orders.length;
 
-        const content = `
-            <div style="padding: 1.5rem;">
-                <div style="margin-bottom: 1rem;"><strong>ID Pesanan:</strong> #${order.id}</div>
-                <div style="margin-bottom: 1rem;"><strong>Nama:</strong> ${order.customer_name}</div>
-                <div style="margin-bottom: 1rem;"><strong>Telepon:</strong> ${order.phone}</div>
-                <div style="margin-bottom: 1rem;"><strong>Email:</strong> ${order.email || '-'}</div>
-                <div style="margin-bottom: 1rem;"><strong>Alamat:</strong> ${order.address}</div>
-                <div style="margin-bottom: 1rem;"><strong>Produk:</strong> ${order.product_name}</div>
-                <div style="margin-bottom: 1rem;"><strong>Jumlah:</strong> ${order.quantity} pack</div>
-                <div style="margin-bottom: 1rem;"><strong>Total:</strong> ${formatCurrency(order.total)}</div>
-                <div style="margin-bottom: 1rem;"><strong>Catatan:</strong> ${order.notes || '-'}</div>
-                <div style="margin-bottom: 1rem;"><strong>Status:</strong> <span class="status-badge ${order.status}">${getStatusText(order.status)}</span></div>
-                <div><strong>Tanggal:</strong> ${new Date(order.created_at).toLocaleString('id-ID')}</div>
-            </div>
-        `;
-
-        document.getElementById('orderDetailContent').innerHTML = content;
-        document.getElementById('orderModal').classList.add('active');
-    };
-
-    // Delete Order - Expose to global
-    window.deleteOrderGlobal = async function(id) {
-        if (confirm('Yakin ingin menghapus pesanan ini?')) {
-            const success = await deleteOrderFromDB(id);
-            if (success) {
-                loadOrders();
-                alert('Pesanan berhasil dihapus!');
+        let totalRevenue = 0;
+        orders.forEach(order => {
+            if (order.total) {
+                totalRevenue += Number(order.total);
             }
+        });
+        dashboardTotalRevenue.textContent = formatRupiah(totalRevenue);
+
+        if (orders.length > 0) {
+            const latestOrder = orders[0];
+            dashboardLatestOrder.innerHTML = `
+                <strong>${latestOrder.customer_name}</strong> memesan 
+                <strong>${latestOrder.product_name}</strong> (${latestOrder.quantity}x) 
+                dengan total ${formatRupiah(latestOrder.total)}<br>
+                <small>${new Date(latestOrder.created_at).toLocaleString('id-ID')}</small>
+            `;
+        } else {
+            dashboardLatestOrder.textContent = 'Belum ada pesanan terbaru.';
         }
-    };
+    }
 
-    document.getElementById('closeOrderModal').addEventListener('click', function() {
-        document.getElementById('orderModal').classList.remove('active');
-    });
+    // ==================== TOKO SETTINGS ====================
 
-    document.getElementById('orderModal').addEventListener('click', function(e) {
-        if (e.target === this) this.classList.remove('active');
-    });
+    const storeForm = document.getElementById('storeForm');
 
-    // Settings
-    document.getElementById('storeInfoForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        localStorage.setItem('storeName', document.getElementById('storeName').value);
-        localStorage.setItem('storeAddress', document.getElementById('storeAddress').value);
-        localStorage.setItem('storePhone', document.getElementById('storePhone').value);
-        localStorage.setItem('storeEmail', document.getElementById('storeEmail').value);
-        
-        alert('Informasi toko berhasil diperbarui!');
-    });
+    if (storeForm) {
+        storeForm.addEventListener('submit', function(e) {
+            e.preventDefault();
 
-    document.getElementById('changePasswordForm').addEventListener('submit', function(e) {
+            const storeName = document.getElementById('storeName').value.trim();
+            const storePhone = document.getElementById('storePhone').value.trim();
+            const storeAddress = document.getElementById('storeAddress').value.trim();
+            const storeDescription = document.getElementById('storeDescription').value.trim();
+
+            localStorage.setItem('storeName', storeName);
+            localStorage.setItem('storePhone', storePhone);
+            localStorage.setItem('storeAddress', storeAddress);
+            localStorage.setItem('storeDescription', storeDescription);
+
+            alert('Informasi toko berhasil diperbarui!');
+        });
+
+        document.getElementById('storeName').value = localStorage.getItem('storeName') || 'Bude Peyek';
+        document.getElementById('storePhone').value = localStorage.getItem('storePhone') || '083169352889';
+        document.getElementById('storeAddress').value = localStorage.getItem('storeAddress') || 'Bandar Lampung, Indonesia';
+        document.getElementById('storeDescription').value = localStorage.getItem('storeDescription') || 'Peyek renyah dan gurih khas Nusantara.';
+    }
+
+    // ==================== UBAH PASSWORD (PAKAI DATABASE) ====================
+
+    document.getElementById('changePasswordForm').addEventListener('submit', async function(e) {
         e.preventDefault();
 
         const oldPassword = document.getElementById('oldPassword').value;
         const newPassword = document.getElementById('newPassword').value;
         const confirmPassword = document.getElementById('confirmPassword').value;
 
-        const adminData = JSON.parse(localStorage.getItem('adminCredentials')) || {
-            username: 'admin',
-            password: 'admin123'
-        };
-
-        if (oldPassword !== adminData.password) {
-            alert('Password lama salah!');
+        if (!oldPassword || !newPassword || !confirmPassword) {
+            alert('Semua field password wajib diisi!');
             return;
         }
 
@@ -530,14 +545,47 @@ function initAdmin() {
             return;
         }
 
-        adminData.password = newPassword;
-        localStorage.setItem('adminCredentials', JSON.stringify(adminData));
+        const currentUsername = sessionStorage.getItem('adminUsername') || 'admin';
 
-        alert('Password berhasil diubah!');
-        this.reset();
+        try {
+            const { data, error } = await supabase
+                .from('admin_credentials')
+                .select('id, username, password')
+                .eq('username', currentUsername)
+                .single();
+
+            if (error || !data) {
+                console.error('Gagal mengambil data admin:', error);
+                alert('Gagal mengambil data admin. Silakan coba lagi.');
+                return;
+            }
+
+            if (oldPassword !== data.password) {
+                alert('Password lama salah!');
+                return;
+            }
+
+            const { error: updateError } = await supabase
+                .from('admin_credentials')
+                .update({ password: newPassword })
+                .eq('id', data.id);
+
+            if (updateError) {
+                console.error('Gagal update password:', updateError);
+                alert('Gagal mengubah password. Silakan coba lagi.');
+                return;
+            }
+
+            alert('Password berhasil diubah!');
+            this.reset();
+        } catch (err) {
+            console.error('Unexpected error saat ubah password:', err);
+            alert('Terjadi kesalahan saat mengubah password. Silakan coba lagi.');
+        }
     });
 
-    // Logout
+    // ==================== LOGOUT ====================
+
     document.getElementById('logoutBtn').addEventListener('click', function() {
         if (confirm('Yakin ingin logout?')) {
             sessionStorage.removeItem('adminLoggedIn');
@@ -546,22 +594,31 @@ function initAdmin() {
         }
     });
 
-    // Menu toggle
-    document.getElementById('menuToggle').addEventListener('click', function() {
-        document.querySelector('.admin-sidebar').classList.toggle('active');
-    });
+    // ==================== UI INTERACTION ====================
 
-    // Admin name
-    document.getElementById('adminName').textContent = sessionStorage.getItem('adminUsername') || 'Admin';
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', () => {
+            document.body.classList.toggle('sidebar-collapsed');
+        });
+    }
 
-    // Initialize - Load data from Supabase
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    if (mobileMenuToggle) {
+        mobileMenuToggle.addEventListener('click', () => {
+            document.querySelector('.admin-sidebar').classList.toggle('active');
+        });
+    }
+
+    document.getElementById('adminName').textContent =
+        sessionStorage.getItem('adminUsername') || 'Admin';
+
     async function initializeAdmin() {
         await loadProductsFromDB();
         await loadOrdersFromDB();
-        loadDashboard();
+        updateDashboard();
     }
 
-    // Initialize when everything is ready
     initializeAdmin();
 }
 
