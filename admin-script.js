@@ -26,34 +26,34 @@ function initAdmin() {
     };
 
     const ORDER_STATUS_LIST = [
-        { value: 'pending',    label: 'Pending / Baru' },
-        { value: 'processing', label: 'Diproses' },
-        { value: 'shipped',    label: 'Dikirim' },
-        { value: 'completed',  label: 'Selesai' },
-        { value: 'cancelled',  label: 'Dibatalkan' },
+        { value: 'pending',   label: 'Pending / Baru' },
+        { value: 'processing',label: 'Diproses' },
+        { value: 'shipped',   label: 'Dikirim' },
+        { value: 'completed', label: 'Selesai' },
+        { value: 'cancelled', label: 'Dibatalkan' },
     ];
 
     const statusToBadgeClass = (status) => {
         switch (status) {
-            case 'pending':    return 'status-badge pending';
-            case 'processing': return 'status-badge processing';
-            case 'shipped':    return 'status-badge processing'; // sama warna dengan processing
-            case 'completed':  return 'status-badge completed';
-            case 'cancelled':  return 'status-badge cancelled';
-            case 'active':     return 'status-badge active';
-            case 'inactive':   return 'status-badge inactive';
-            default:           return 'status-badge';
+            case 'pending':   return 'status-badge pending';
+            case 'processing':return 'status-badge processing';
+            case 'shipped':   return 'status-badge processing'; // sama warna dengan processing
+            case 'completed': return 'status-badge completed';
+            case 'cancelled': return 'status-badge cancelled';
+            case 'active':    return 'status-badge active';
+            case 'inactive':  return 'status-badge inactive';
+            default:          return 'status-badge';
         }
     };
 
     const statusToText = (status) => {
         switch (status) {
-            case 'pending':    return 'Pending / Baru';
-            case 'processing': return 'Diproses';
-            case 'shipped':    return 'Dikirim';
-            case 'completed':  return 'Selesai';
-            case 'cancelled':  return 'Dibatalkan';
-            default:           return status || '-';
+            case 'pending':   return 'Pending / Baru';
+            case 'processing':return 'Diproses';
+            case 'shipped':   return 'Dikirim';
+            case 'completed': return 'Selesai';
+            case 'cancelled': return 'Dibatalkan';
+            default:          return status || '-';
         }
     };
 
@@ -227,10 +227,9 @@ function initAdmin() {
                 </td>
                 <td>${formatRupiah(p.price)}</td>
                 <td>
-                    ${
-                        isHabis
-                            ? '<span class="status-badge inactive">Stok Habis</span>'
-                            : `<span class="status-badge active">Stok: ${stock}</span>`
+                    ${isHabis
+                        ? '<span class="status-badge inactive">Stok Habis</span>'
+                        : `<span class="status-badge active">Stok: ${stock}</span>`
                     }
                 </td>
                 <td>
@@ -504,9 +503,9 @@ function initAdmin() {
 
     // ====== PESANAN: TABEL + STATUS + WHATSAPP ======
     function buildWhatsAppUrlForOrder(order) {
+        // Nomor tujuan
         const defaultAdminNumber = '6283169352889';
         let waNumber = defaultAdminNumber;
-
         if (order.phone) {
             let digits = order.phone.toString().replace(/[^0-9]/g, '').trim();
             if (digits.startsWith('0')) digits = '62' + digits.slice(1);
@@ -514,12 +513,7 @@ function initAdmin() {
             waNumber = digits;
         }
 
-        const text =
-            `Halo Kak ${order.customer_name || ''}, pesanan ` +
-            `${order.product_name || ''} sebanyak ${order.quantity || 0} ` +
-            `dengan total ${formatRupiah(order.total || 0)} ` +
-            `sedang kami proses. Terima kasih sudah memesan di Bude Peyek 🙏`;
-
+        const text = `Halo Kak ${order.customer_name || ''}, pesanan ${order.product_name || ''} sebanyak ${order.quantity || 0} dengan total ${formatRupiah(order.total || 0)} sedang kami proses. Terima kasih sudah memesan di Bude Peyek 🙏`;
         return `https://wa.me/${waNumber}?text=${encodeURIComponent(text)}`;
     }
 
@@ -538,7 +532,7 @@ function initAdmin() {
         if (!filtered.length) {
             orderTableBody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="empty-state">
+                    <td colspan="9" class="empty-state">
                         <i class="fas fa-shopping-cart"></i>
                         <p>Belum ada pesanan.</p>
                     </td>
@@ -562,9 +556,11 @@ function initAdmin() {
             tr.innerHTML = `
                 <td>#${order.id}</td>
                 <td>${order.customer_name || '-'}</td>
+                <td>${order.phone || '-'}</td>
                 <td>${order.product_name || '-'}</td>
                 <td>${order.quantity || 0}</td>
                 <td>${formatRupiah(order.total || 0)}</td>
+                <td>${order.address || '-'}</td>
                 <td>
                     <div class="status-cell">
                         <span class="${statusToBadgeClass(order.status || 'pending')} status-label">
@@ -575,16 +571,12 @@ function initAdmin() {
                         </select>
                     </div>
                 </td>
-                <td>${tanggal}</td>
                 <td>
                     <div class="table-actions">
-                        <button class="btn-icon view btn-detail" data-id="${order.id}" title="Detail pesanan">
+                        <button class="btn-icon view btn-detail" data-id="${order.id}">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <a class="btn-icon wa"
-                           href="${buildWhatsAppUrlForOrder(order)}"
-                           target="_blank"
-                           title="Hubungi via WhatsApp">
+                        <a class="btn-icon wa" href="${buildWhatsAppUrlForOrder(order)}" target="_blank" title="Hubungi via WhatsApp">
                             <i class="fab fa-whatsapp"></i>
                         </a>
                     </div>
@@ -661,6 +653,8 @@ function initAdmin() {
                 products.find(p => p.name === order.product_name);
             if (!product) {
                 alert('Produk terkait pesanan ini tidak ditemukan. Stok tidak dapat disesuaikan.');
+                // Jangan lanjut ubah status, biar stok nggak kacau
+                // Kalau mau tetap lanjut, hapus "return" di bawah
                 return;
             }
         }
