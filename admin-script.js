@@ -608,11 +608,33 @@ function initAdmin() {
     document.getElementById('adminName').textContent =
         sessionStorage.getItem('adminUsername') || 'Admin';
 
-    async function initializeAdmin() {
-        await loadProductsFromDB();
-        await loadOrdersFromDB();
-        updateDashboard();
+// Auth check dengan Supabase Auth, lalu load data dari Supabase
+async function requireAuth() {
+    try {
+        const { data, error } = await supabase.auth.getUser();
+        if (error || !data || !data.user) {
+            console.warn('User belum login atau sesi habis, redirect ke login.');
+            window.location.href = 'login.html';
+            throw new Error('Not authenticated');
+        }
+        return data.user;
+    } catch (err) {
+        console.error('Error saat cek auth:', err);
+        window.location.href = 'login.html';
+        throw err;
     }
+}
+
+async function initializeAdmin() {
+    // Pastikan admin sudah login
+    const user = await requireAuth();
+    console.log('Admin login sebagai:', user.email || user.id);
+
+    await loadProductsFromDB();
+    await loadOrdersFromDB();
+    loadDashboard();
+}
+
 
     initializeAdmin();
 }
