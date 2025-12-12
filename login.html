@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="admin-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
 </head>
 <body class="login-body">
     <div class="login-container">
@@ -14,18 +16,18 @@
             <div class="login-header">
                 <i class="fas fa-cookie-bite"></i>
                 <h1>Bude Peyek</h1>
-                <p>Admin Dashboard</p>
+                <p>Login Admin</p>
             </div>
 
             <form id="loginForm" class="login-form">
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle"></i>
-                    <span>Default: admin / admin123 (disimpan di tabel <b>admin_credentials</b>)</span>
+                    <span>Login menggunakan akun admin yang sudah dibuat di Supabase Auth.</span>
                 </div>
 
                 <div class="form-group">
                     <label for="username">
-                        <i class="fas fa-user"></i> Username
+                        <i class="fas fa-user"></i> Email / Username
                     </label>
                     <input type="text" id="username" name="username" required autofocus>
                 </div>
@@ -42,10 +44,10 @@
                     </div>
                 </div>
 
-                <div class="form-options">
+                <div class="form-group">
                     <label class="checkbox-label">
                         <input type="checkbox" id="rememberMe">
-                        <span>Ingat saya</span>
+                        <span>Ingat Saya</span>
                     </label>
                 </div>
 
@@ -62,90 +64,81 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // Toggle password visibility
-            const passwordInput = document.getElementById('password');
-            const togglePassword = document.getElementById('togglePassword');
+            const togglePasswordBtn = document.getElementById('togglePassword');
+            if (togglePasswordBtn) {
+                togglePasswordBtn.addEventListener('click', function() {
+                    const passwordInput = document.getElementById('password');
+                    const icon = this.querySelector('i');
 
-            if (togglePassword && passwordInput) {
-                togglePassword.addEventListener('click', () => {
-                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                    passwordInput.setAttribute('type', type);
-
-                    const icon = togglePassword.querySelector('i');
-                    if (icon) {
-                        icon.classList.toggle('fa-eye');
-                        icon.classList.toggle('fa-eye-slash');
+                    if (passwordInput.type === 'password') {
+                        passwordInput.type = 'text';
+                        icon.classList.remove('fa-eye');
+                        icon.classList.add('fa-eye-slash');
+                    } else {
+                        passwordInput.type = 'password';
+                        icon.classList.remove('fa-eye-slash');
+                        icon.classList.add('fa-eye');
                     }
                 });
             }
 
-            // Prefill remembered username
-            const rememberedUsername = localStorage.getItem('rememberAdminUsername');
-            if (rememberedUsername) {
-                const usernameInput = document.getElementById('username');
-                const rememberCheckbox = document.getElementById('rememberMe');
-                if (usernameInput) usernameInput.value = rememberedUsername;
-                if (rememberCheckbox) rememberCheckbox.checked = true;
+            if (!window.supabaseClient) {
+                console.error('Supabase client belum siap. Periksa supabase-config.js');
+                return;
             }
 
-            function initLogin() {
-                if (!window.supabaseClient) {
-                    console.log('⏳ Menunggu Supabase client untuk login...');
-                    setTimeout(initLogin, 100);
-                    return;
-                }
+            const supabase = window.supabaseClient;
 
-                const supabase = window.supabaseClient;
+            // Prefill email jika Remember Me aktif
+            const remembered = localStorage.getItem('rememberAdmin') === 'true';
+            const rememberedEmail = localStorage.getItem('rememberAdminEmail');
+            if (remembered && rememberedEmail) {
+                const usernameInput = document.getElementById('username');
+                const rememberMeCheckbox = document.getElementById('rememberMe');
+                if (usernameInput) usernameInput.value = rememberedEmail;
+                if (rememberMeCheckbox) rememberMeCheckbox.checked = true;
+            }
 
-                const loginForm = document.getElementById('loginForm');
-                if (!loginForm) return;
-
+            // Login form handler (Supabase Auth)
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
                 loginForm.addEventListener('submit', async function(e) {
                     e.preventDefault();
 
-                    const username = document.getElementById('username').value.trim();
+                    const email = document.getElementById('username').value.trim();
                     const password = document.getElementById('password').value;
                     const rememberMe = document.getElementById('rememberMe').checked;
 
-                    if (!username || !password) {
-                        alert('Masukkan username dan password.');
+                    if (!email || !password) {
+                        alert('Email/username dan password wajib diisi!');
                         return;
                     }
 
                     try {
-                        const { data, error } = await supabase
-                            .from('admin_credentials')
-                            .select('id, username, password')
-                            .eq('username', username)
-                            .single();
+                        const { data, error } = await supabase.auth.signInWithPassword({
+                            email,
+                            password
+                        });
 
-                        if (error || !data) {
+                        if (error || !data || !data.session) {
                             console.error('Login error:', error);
-                            alert('Username atau password salah!');
+                            alert('Email atau password salah!');
                             return;
                         }
 
-                        if (password !== data.password) {
-                            alert('Username atau password salah!');
-                            return;
-                        }
-
-                        // Set session
+                        // Simpan sedikit info di sessionStorage jika mau dipakai di UI
                         sessionStorage.setItem('adminLoggedIn', 'true');
-                        sessionStorage.setItem('adminUsername', data.username);
-                        sessionStorage.setItem('adminId', data.id);
+                        sessionStorage.setItem('adminUsername', email);
 
-                        // Remember me (only username, BUKAN password)
                         if (rememberMe) {
                             localStorage.setItem('rememberAdmin', 'true');
-                            localStorage.setItem('rememberAdminUsername', data.username);
+                            localStorage.setItem('rememberAdminEmail', email);
                         } else {
                             localStorage.removeItem('rememberAdmin');
-                            localStorage.removeItem('rememberAdminUsername');
+                            localStorage.removeItem('rememberAdminEmail');
                         }
 
                         alert('Login berhasil! Mengalihkan ke dashboard...');
@@ -155,14 +148,20 @@
                         alert('Terjadi kesalahan saat login. Silakan coba lagi.');
                     }
                 });
-
-                // Jika sudah login, langsung redirect
-                if (sessionStorage.getItem('adminLoggedIn') === 'true') {
-                    window.location.href = 'admin.html';
-                }
             }
 
-            initLogin();
+            // Jika sudah login (masih ada sesi Supabase), langsung redirect ke admin
+            (async () => {
+                try {
+                    const { data, error } = await supabase.auth.getUser();
+                    if (!error && data && data.user) {
+                        console.log('Sudah login sebagai', data.user.email);
+                        window.location.href = 'admin.html';
+                    }
+                } catch (err) {
+                    console.error('Gagal cek sesi login:', err);
+                }
+            })();
         });
     </script>
 </body>
