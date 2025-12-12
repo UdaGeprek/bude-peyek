@@ -1,27 +1,22 @@
-// Admin Script with Supabase Integration (fixed, no '...' truncation)
+// admin-script.js
+// Admin Dashboard Bude Peyek – pakai Supabase Auth (tanpa sessionStorage login check)
 
-// Cek login sederhana berbasis sessionStorage
-if (!sessionStorage.getItem('adminLoggedIn')) {
-    window.location.href = 'login.html';
-}
-
+// Inisialisasi setelah Supabase client siap
 function initAdmin() {
-    // Pastikan Supabase client sudah siap
     if (!window.supabaseClient) {
         console.log('⏳ Menunggu Supabase client...');
         setTimeout(initAdmin, 150);
         return;
     }
 
-    console.log('✅ Supabase client siap di admin dashboard');
+    console.log('✅ Supabase client siap di admin');
     const supabase = window.supabaseClient;
 
-    // ===== STATE =====
+    // ====== STATE ======
     let products = [];
     let orders = [];
-    let currentProductId = null;
 
-    // ===== UTIL =====
+    // ====== UTIL ======
     const formatRupiah = (value) => {
         const num = Number(value) || 0;
         return new Intl.NumberFormat('id-ID', {
@@ -43,24 +38,78 @@ function initAdmin() {
         }
     };
 
-    // ===== NAVIGASI PAGE =====
+    // ====== AUTH CHECK (HANYA SUPABASE AUTH) ======
+    async function requireAuth() {
+        try {
+            const { data, error } = await supabase.auth.getUser();
+            if (error || !data || !data.user) {
+                console.warn('Belum login / sesi habis → balik ke login');
+                window.location.href = 'login.html';
+                return null;
+            }
+            return data.user;
+        } catch (err) {
+            console.error('Error cek auth:', err);
+            window.location.href = 'login.html';
+            return null;
+        }
+    }
+
+    // ====== DOM ======
     const navLinks = document.querySelectorAll('.nav-item');
     const pages = document.querySelectorAll('.admin-page');
     const pageTitle = document.getElementById('pageTitle');
 
+    const productTableBody = document.getElementById('productTableBody');
+    const addProductBtn = document.getElementById('addProductBtn');
+    const productModal = document.getElementById('productModal');
+    const modalOverlay = document.getElementById('modalOverlay');
+    const closeModalBtn = document.getElementById('closeModal');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const productForm = document.getElementById('productForm');
+    const imagePreview = document.getElementById('imagePreview');
+    const productImageInput = document.getElementById('productImage');
+
+    const orderTableBody = document.getElementById('orderTableBody');
+    const filterStatusSelect = document.getElementById('filterStatus');
+
+    const orderModal = document.getElementById('orderModal');
+    const orderDetailContent = document.getElementById('orderDetailContent');
+    const closeOrderModalBtn = document.getElementById('closeOrderModal');
+
+    const totalProdukEl = document.getElementById('totalProduk');
+    const totalPesananEl = document.getElementById('totalPesanan');
+    const stokRendahEl = document.getElementById('stokRendah');
+    const totalPendapatanEl = document.getElementById('totalPendapatan');
+    const topProductsEl = document.getElementById('topProducts');
+    const recentOrdersEl = document.getElementById('recentOrders');
+
+    const storeInfoForm = document.getElementById('storeInfoForm');
+    const adminNameEl = document.getElementById('adminName');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const menuToggle = document.getElementById('menuToggle');
+
+    const changePasswordForm = document.getElementById('changePasswordForm');
+
+    let currentProductId = null;
+
+    // ====== NAVIGASI HALAMAN ======
     function showPage(page) {
         pages.forEach(sec => {
-            sec.classList.toggle('active', sec.id === page + '-page');
+            sec.classList.toggle('active', sec.id === `${page}-page`);
         });
 
         navLinks.forEach(link => {
             link.classList.toggle('active', link.dataset.page === page);
         });
 
-        if (page === 'dashboard') pageTitle.textContent = 'Dashboard';
-        if (page === 'produk') pageTitle.textContent = 'Kelola Produk';
-        if (page === 'pesanan') pageTitle.textContent = 'Riwayat Pesanan';
-        if (page === 'settings') pageTitle.textContent = 'Pengaturan';
+        const mapTitle = {
+            dashboard: 'Dashboard',
+            produk: 'Kelola Produk',
+            pesanan: 'Riwayat Pesanan',
+            settings: 'Pengaturan'
+        };
+        pageTitle.textContent = mapTitle[page] || 'Dashboard';
     }
 
     navLinks.forEach(link => {
@@ -68,14 +117,13 @@ function initAdmin() {
             e.preventDefault();
             const page = link.dataset.page;
             showPage(page);
-
-            if (page === 'dashboard') updateDashboard();
             if (page === 'produk') renderProductTable();
             if (page === 'pesanan') renderOrderTable();
+            if (page === 'dashboard') updateDashboard();
         });
     });
 
-    // ===== AMBIL DATA DARI SUPABASE =====
+    // ====== LOAD DATA DARI SUPABASE ======
     async function fetchProducts() {
         try {
             const { data, error } = await supabase
@@ -86,8 +134,8 @@ function initAdmin() {
             if (error) throw error;
             products = data || [];
         } catch (err) {
-            console.error('Gagal ambil data produk:', err);
-            alert('Gagal memuat produk dari database Supabase.\n\n' + err.message);
+            console.error('Gagal ambil produk:', err);
+            alert('Gagal memuat produk dari database Supabase:\n' + err.message);
         }
     }
 
@@ -101,22 +149,21 @@ function initAdmin() {
             if (error) throw error;
             orders = data || [];
         } catch (err) {
-            console.error('Gagal ambil data pesanan:', err);
-            alert('Gagal memuat pesanan dari database Supabase.\n\n' + err.message);
+            console.error('Gagal ambil pesanan:', err);
+            alert('Gagal memuat pesanan dari database Supabase:\n' + err.message);
         }
     }
 
-    // ===== RENDER TABEL PRODUK =====
+    // ====== PRODUK: TABEL & MODAL ======
     function renderProductTable() {
-        const tbody = document.getElementById('productTableBody');
-        if (!tbody) return;
+        if (!productTableBody) return;
 
-        tbody.innerHTML = '';
+        productTableBody.innerHTML = '';
 
         if (!products.length) {
-            tbody.innerHTML = `
+            productTableBody.innerHTML = `
                 <tr>
-                    <td colspan="5" class="text-center">Belum ada produk di database.</td>
+                    <td colspan="6" class="text-center">Belum ada produk.</td>
                 </tr>`;
             return;
         }
@@ -144,25 +191,23 @@ function initAdmin() {
                     </button>
                 </td>
             `;
-            tbody.appendChild(tr);
+            productTableBody.appendChild(tr);
         });
 
-        // Event edit & delete
-        tbody.querySelectorAll('.btn-edit').forEach(btn => {
+        productTableBody.querySelectorAll('.btn-edit').forEach(btn => {
             btn.addEventListener('click', () => {
                 const id = Number(btn.dataset.id);
                 openEditProductModal(id);
             });
         });
 
-        tbody.querySelectorAll('.btn-delete').forEach(btn => {
+        productTableBody.querySelectorAll('.btn-delete').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const id = Number(btn.dataset.id);
-                const product = products.find(p => p.id === id);
-                if (!product) return;
+                const p = products.find(prod => prod.id === id);
+                if (!p) return;
 
-                const ok = confirm(`Yakin ingin menghapus produk "${product.name}"?`);
-                if (!ok) return;
+                if (!confirm(`Yakin ingin menghapus produk "${p.name}"?`)) return;
 
                 try {
                     const { error } = await supabase
@@ -177,24 +222,20 @@ function initAdmin() {
                     updateDashboard();
                 } catch (err) {
                     console.error('Gagal hapus produk:', err);
-                    alert('Gagal menghapus produk.\n\n' + err.message);
+                    alert('Gagal menghapus produk:\n' + err.message);
                 }
             });
         });
     }
-
-    // ===== MODAL PRODUK (TAMBAH/EDIT) =====
-    const productModal = document.getElementById('productModal');
-    const modalOverlay = document.getElementById('modalOverlay');
-    const imagePreview = document.getElementById('imagePreview');
-    const productForm = document.getElementById('productForm');
 
     function openAddProductModal() {
         currentProductId = null;
         document.getElementById('modalTitle').textContent = 'Tambah Produk';
         productForm.reset();
         document.getElementById('productId').value = '';
-        imagePreview.innerHTML = '<i class="fas fa-image"></i><p>Klik untuk upload gambar</p>';
+        if (imagePreview) {
+            imagePreview.innerHTML = '<i class="fas fa-image"></i><p>Klik untuk upload gambar</p>';
+        }
         productModal.classList.add('active');
         modalOverlay.classList.add('active');
     }
@@ -216,9 +257,9 @@ function initAdmin() {
         document.getElementById('productStatus').value = p.status || 'active';
         document.getElementById('badgeText').value = p.badge || '';
 
-        if (p.image_url) {
+        if (p.image_url && imagePreview) {
             imagePreview.innerHTML = `<img src="${p.image_url}" alt="${p.name}">`;
-        } else {
+        } else if (imagePreview) {
             imagePreview.innerHTML = '<i class="fas fa-image"></i><p>Klik untuk upload gambar</p>';
         }
 
@@ -228,33 +269,37 @@ function initAdmin() {
 
     function closeProductModal() {
         productModal.classList.remove('active');
+        orderModal.classList.remove('active');
         modalOverlay.classList.remove('active');
     }
 
-    document.getElementById('addProductBtn').addEventListener('click', openAddProductModal);
-    document.getElementById('closeModal').addEventListener('click', closeProductModal);
-    document.getElementById('cancelBtn').addEventListener('click', closeProductModal);
-    modalOverlay.addEventListener('click', (e) => {
-        if (e.target === modalOverlay) closeProductModal();
-    });
+    if (addProductBtn) addProductBtn.addEventListener('click', openAddProductModal);
+    if (closeModalBtn) closeModalBtn.addEventListener('click', closeProductModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeProductModal);
+    if (modalOverlay) {
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) closeProductModal();
+        });
+    }
 
-    // Click area preview untuk memicu input file
-    imagePreview.addEventListener('click', () => {
-        document.getElementById('productImage').click();
-    });
+    if (imagePreview && productImageInput) {
+        imagePreview.addEventListener('click', () => {
+            productImageInput.click();
+        });
 
-    document.getElementById('productImage').addEventListener('change', function () {
-        const file = this.files[0];
-        if (!file) {
-            imagePreview.innerHTML = '<i class="fas fa-image"></i><p>Klik untuk upload gambar</p>';
-            return;
-        }
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            imagePreview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
-        };
-        reader.readAsDataURL(file);
-    });
+        productImageInput.addEventListener('change', function () {
+            const file = this.files[0];
+            if (!file) {
+                imagePreview.innerHTML = '<i class="fas fa-image"></i><p>Klik untuk upload gambar</p>';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
 
     async function uploadImageToStorage(file) {
         if (!file) return null;
@@ -276,109 +321,109 @@ function initAdmin() {
             return urlData.publicUrl;
         } catch (err) {
             console.error('Upload gambar gagal:', err);
-            alert('Gagal mengupload gambar ke Supabase Storage.\n\n' + err.message);
+            alert('Gagal mengupload gambar ke Supabase Storage:\n' + err.message);
             return null;
         }
     }
 
-    // Submit form produk
-    productForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const submitBtn = productForm.querySelector('button[type="submit"]');
-        if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
-        }
-
-        const idHidden = document.getElementById('productId').value;
-        const name = document.getElementById('productName').value.trim();
-        const description = document.getElementById('productDescription').value.trim();
-        const price = Number(document.getElementById('productPrice').value) || 0;
-        const stock = document.getElementById('productStock').value === '' 
-            ? null 
-            : Number(document.getElementById('productStock').value);
-        const status = document.getElementById('productStatus').value;
-        const badge = document.getElementById('badgeText').value.trim();
-        const file = document.getElementById('productImage').files[0];
-
-        if (!name || !price) {
-            alert('Nama dan harga produk wajib diisi.');
+    if (productForm) {
+        productForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = productForm.querySelector('button[type="submit"]');
             if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-save"></i> Simpan';
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
             }
-            return;
-        }
 
-        let image_url = null;
-        if (file) {
-            image_url = await uploadImageToStorage(file);
-            if (!image_url) {
+            const idHidden = document.getElementById('productId').value;
+            const name = document.getElementById('productName').value.trim();
+            const description = document.getElementById('productDescription').value.trim();
+            const price = Number(document.getElementById('productPrice').value) || 0;
+            const stock = document.getElementById('productStock').value === ''
+                ? null
+                : Number(document.getElementById('productStock').value);
+            const status = document.getElementById('productStatus').value;
+            const badge = document.getElementById('badgeText').value.trim();
+            const file = productImageInput.files[0];
+
+            if (!name || !price) {
+                alert('Nama dan harga produk wajib diisi.');
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<i class="fas fa-save"></i> Simpan';
                 }
                 return;
             }
-        }
 
-        const payload = {
-            name,
-            description,
-            price,
-            stock,
-            status,
-            badge: badge || null
-        };
-        if (image_url) payload.image_url = image_url;
-
-        try {
-            if (idHidden) {
-                const { error } = await supabase
-                    .from('products')
-                    .update(payload)
-                    .eq('id', Number(idHidden));
-                if (error) throw error;
-                alert('Produk berhasil diperbarui.');
-            } else {
-                const { error } = await supabase
-                    .from('products')
-                    .insert([payload]);
-                if (error) throw error;
-                alert('Produk baru berhasil ditambahkan.');
+            let image_url = null;
+            if (file) {
+                image_url = await uploadImageToStorage(file);
+                if (!image_url) {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="fas fa-save"></i> Simpan';
+                    }
+                    return;
+                }
             }
 
-            await fetchProducts();
-            renderProductTable();
-            updateDashboard();
-            closeProductModal();
-        } catch (err) {
-            console.error('Gagal simpan produk:', err);
-            alert('Gagal menyimpan produk.\n\n' + err.message);
-        } finally {
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-save"></i> Simpan';
-            }
-        }
-    });
+            const payload = {
+                name,
+                description,
+                price,
+                stock,
+                status,
+                badge: badge || null
+            };
+            if (image_url) payload.image_url = image_url;
 
-    // ===== RENDER TABEL PESANAN =====
+            try {
+                if (idHidden) {
+                    const { error } = await supabase
+                        .from('products')
+                        .update(payload)
+                        .eq('id', Number(idHidden));
+                    if (error) throw error;
+                    alert('Produk berhasil diperbarui.');
+                } else {
+                    const { error } = await supabase
+                        .from('products')
+                        .insert([payload]);
+                    if (error) throw error;
+                    alert('Produk baru berhasil ditambahkan.');
+                }
+
+                await fetchProducts();
+                renderProductTable();
+                updateDashboard();
+                closeProductModal();
+            } catch (err) {
+                console.error('Gagal simpan produk:', err);
+                alert('Gagal menyimpan produk:\n' + err.message);
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-save"></i> Simpan';
+                }
+            }
+        });
+    }
+
+    // ====== PESANAN ======
     function renderOrderTable() {
-        const tbody = document.getElementById('orderTableBody');
-        if (!tbody) return;
+        if (!orderTableBody) return;
 
-        const filterStatus = document.getElementById('filterStatus').value;
+        const filterStatus = filterStatusSelect ? filterStatusSelect.value : 'all';
         let filtered = [...orders];
 
         if (filterStatus !== 'all') {
             filtered = filtered.filter(o => (o.status || 'pending') === filterStatus);
         }
 
-        tbody.innerHTML = '';
+        orderTableBody.innerHTML = '';
 
         if (!filtered.length) {
-            tbody.innerHTML = `
+            orderTableBody.innerHTML = `
                 <tr>
                     <td colspan="8" class="text-center">Belum ada pesanan.</td>
                 </tr>`;
@@ -388,7 +433,7 @@ function initAdmin() {
         filtered.forEach(order => {
             const tr = document.createElement('tr');
             const statusClass = getStatusBadgeClass(order.status);
-            const tanggal = order.created_at 
+            const tanggal = order.created_at
                 ? new Date(order.created_at).toLocaleString('id-ID')
                 : '-';
 
@@ -414,11 +459,10 @@ function initAdmin() {
                     </a>
                 </td>
             `;
-            tbody.appendChild(tr);
+            orderTableBody.appendChild(tr);
         });
 
-        // Detail pesanan
-        tbody.querySelectorAll('.btn-detail').forEach(btn => {
+        orderTableBody.querySelectorAll('.btn-detail').forEach(btn => {
             btn.addEventListener('click', () => {
                 const id = Number(btn.dataset.id);
                 const order = orders.find(o => o.id === id);
@@ -428,12 +472,9 @@ function initAdmin() {
         });
     }
 
-    document.getElementById('filterStatus').addEventListener('change', renderOrderTable);
-
-    // ===== MODAL DETAIL PESANAN =====
-    const orderModal = document.getElementById('orderModal');
-    const orderDetailContent = document.getElementById('orderDetailContent');
-    const closeOrderModalBtn = document.getElementById('closeOrderModal');
+    if (filterStatusSelect) {
+        filterStatusSelect.addEventListener('change', renderOrderTable);
+    }
 
     function openOrderModal(order) {
         orderDetailContent.innerHTML = `
@@ -451,78 +492,72 @@ function initAdmin() {
         modalOverlay.classList.add('active');
     }
 
-    function closeOrderModal() {
-        orderModal.classList.remove('active');
-        modalOverlay.classList.remove('active');
+    if (closeOrderModalBtn) {
+        closeOrderModalBtn.addEventListener('click', closeProductModal);
     }
 
-    closeOrderModalBtn.addEventListener('click', closeOrderModal);
-
-    // ===== DASHBOARD =====
+    // ====== DASHBOARD ======
     function updateDashboard() {
         const totalProduk = products.length;
         const totalPesanan = orders.length;
         const stokRendah = products.filter(p => (p.stock || 0) > 0 && p.stock <= 10).length;
         const totalPendapatan = orders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
 
-        document.getElementById('totalProduk').textContent = totalProduk;
-        document.getElementById('totalPesanan').textContent = totalPesanan;
-        document.getElementById('stokRendah').textContent = stokRendah;
-        document.getElementById('totalPendapatan').textContent = formatRupiah(totalPendapatan);
+        if (totalProdukEl) totalProdukEl.textContent = totalProduk;
+        if (totalPesananEl) totalPesananEl.textContent = totalPesanan;
+        if (stokRendahEl) stokRendahEl.textContent = stokRendah;
+        if (totalPendapatanEl) totalPendapatanEl.textContent = formatRupiah(totalPendapatan);
 
-        const topProductsEl = document.getElementById('topProducts');
-        const recentOrdersEl = document.getElementById('recentOrders');
-
-        // Top produk (sederhana: list semua produk aktif)
-        if (!products.length) {
-            topProductsEl.innerHTML = '<p class="empty-state">Belum ada produk.</p>';
-        } else {
-            topProductsEl.innerHTML = products
-                .filter(p => p.status !== 'inactive')
-                .slice(0, 5)
-                .map(p => `
-                    <div class="product-item">
-                        <span>${p.name}</span>
-                        <span>${formatRupiah(p.price)}</span>
-                    </div>
-                `).join('');
+        if (topProductsEl) {
+            if (!products.length) {
+                topProductsEl.innerHTML = '<p class="empty-state">Belum ada produk.</p>';
+            } else {
+                topProductsEl.innerHTML = products
+                    .filter(p => p.status !== 'inactive')
+                    .slice(0, 5)
+                    .map(p => `
+                        <div class="product-item">
+                            <span>${p.name}</span>
+                            <span>${formatRupiah(p.price)}</span>
+                        </div>
+                    `).join('');
+            }
         }
 
-        // Pesanan terbaru
-        if (!orders.length) {
-            recentOrdersEl.innerHTML = '<p class="empty-state">Belum ada pesanan.</p>';
-        } else {
-            recentOrdersEl.innerHTML = orders
-                .slice(0, 5)
-                .map(o => `
-                    <div class="order-item">
-                        <div>
-                            <strong>${o.customer_name || '-'}</strong>
-                            <p>${o.product_name || '-'}</p>
+        if (recentOrdersEl) {
+            if (!orders.length) {
+                recentOrdersEl.innerHTML = '<p class="empty-state">Belum ada pesanan.</p>';
+            } else {
+                recentOrdersEl.innerHTML = orders
+                    .slice(0, 5)
+                    .map(o => `
+                        <div class="order-item">
+                            <div>
+                                <strong>${o.customer_name || '-'}</strong>
+                                <p>${o.product_name || '-'}</p>
+                            </div>
+                            <div>
+                                <span class="badge ${getStatusBadgeClass(o.status)}">${o.status || 'pending'}</span>
+                                <p>${formatRupiah(o.total)}</p>
+                            </div>
                         </div>
-                        <div>
-                            <span class="badge ${getStatusBadgeClass(o.status)}">${o.status || 'pending'}</span>
-                            <p>${formatRupiah(o.total)}</p>
-                        </div>
-                    </div>
-                `).join('');
+                    `).join('');
+            }
         }
     }
 
-    // ===== SETTINGS (INFORMASI TOKO & PASSWORD) =====
-    const storeForm = document.getElementById('storeInfoForm');
-    if (storeForm) {
-        // Prefill dari localStorage
+    // ====== SETTINGS TOKO ======
+    if (storeInfoForm) {
         document.getElementById('storeName').value =
             localStorage.getItem('storeName') || 'Bude Peyek';
         document.getElementById('storeAddress').value =
-            localStorage.getItem('storeAddress') || 'Jl. Raya Sejahtera No. 123, Jakarta Selatan';
+            localStorage.getItem('storeAddress') || 'Jl. Contoh No. 123, Lampung';
         document.getElementById('storePhone').value =
             localStorage.getItem('storePhone') || '083169352889';
         document.getElementById('storeEmail').value =
             localStorage.getItem('storeEmail') || 'info@budepeyek.com';
 
-        storeForm.addEventListener('submit', (e) => {
+        storeInfoForm.addEventListener('submit', (e) => {
             e.preventDefault();
             localStorage.setItem('storeName', document.getElementById('storeName').value);
             localStorage.setItem('storeAddress', document.getElementById('storeAddress').value);
@@ -532,22 +567,17 @@ function initAdmin() {
         });
     }
 
-    // Ganti password admin (disimpan di localStorage, untuk demo saja)
-    const changePasswordForm = document.getElementById('changePasswordForm');
+    // ====== UBAH PASSWORD VIA SUPABASE AUTH ======
     if (changePasswordForm) {
-        changePasswordForm.addEventListener('submit', (e) => {
+        changePasswordForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+
             const oldPassword = document.getElementById('oldPassword').value;
             const newPassword = document.getElementById('newPassword').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
 
-            const adminData = JSON.parse(localStorage.getItem('adminCredentials')) || {
-                username: 'admin',
-                password: 'admin123'
-            };
-
-            if (oldPassword !== adminData.password) {
-                alert('Password lama salah!');
+            if (!oldPassword || !newPassword || !confirmPassword) {
+                alert('Semua field password wajib diisi!');
                 return;
             }
             if (newPassword !== confirmPassword) {
@@ -559,39 +589,88 @@ function initAdmin() {
                 return;
             }
 
-            adminData.password = newPassword;
-            localStorage.setItem('adminCredentials', JSON.stringify(adminData));
-            alert('Password admin berhasil diubah.');
-            changePasswordForm.reset();
+            try {
+                const { data: userData, error: userError } = await supabase.auth.getUser();
+                if (userError || !userData || !userData.user) {
+                    alert('Sesi login habis, silakan login ulang.');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const email = userData.user.email;
+                if (!email) {
+                    alert('Akun admin tidak memiliki email. Pastikan dibuat via Supabase Auth.');
+                    return;
+                }
+
+                const { error: reauthError } = await supabase.auth.signInWithPassword({
+                    email,
+                    password: oldPassword
+                });
+                if (reauthError) {
+                    alert('Password lama salah!');
+                    return;
+                }
+
+                const { error: updateError } = await supabase.auth.updateUser({
+                    password: newPassword
+                });
+                if (updateError) {
+                    alert('Gagal mengubah password: ' + updateError.message);
+                    return;
+                }
+
+                alert('Password berhasil diubah!');
+                changePasswordForm.reset();
+            } catch (err) {
+                console.error('Error ubah password:', err);
+                alert('Terjadi kesalahan saat mengubah password.');
+            }
         });
     }
 
-    // ===== LOGOUT & UI KECIL =====
-    const logoutBtn = document.getElementById('logoutBtn');
+    // ====== LOGOUT & UI ======
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            const ok = confirm('Yakin ingin logout?');
-            if (!ok) return;
-            sessionStorage.removeItem('adminLoggedIn');
-            sessionStorage.removeItem('adminUsername');
+        logoutBtn.addEventListener('click', async () => {
+            if (!confirm('Yakin ingin logout?')) return;
+            try {
+                await supabase.auth.signOut();
+            } catch (err) {
+                console.error('Error logout:', err);
+            }
             window.location.href = 'login.html';
         });
     }
 
-    const menuToggle = document.getElementById('menuToggle');
     if (menuToggle) {
         menuToggle.addEventListener('click', () => {
             document.querySelector('.admin-sidebar').classList.toggle('active');
         });
     }
 
-    const adminNameEl = document.getElementById('adminName');
-    if (adminNameEl) {
-        adminNameEl.textContent = sessionStorage.getItem('adminUsername') || 'Admin';
-    }
-
-    // ===== INISIALISASI PERTAMA =====
     (async () => {
+        if (adminNameEl) {
+            try {
+                const { data, error } = await supabase.auth.getUser();
+                if (!error && data && data.user) {
+                    adminNameEl.textContent =
+                        data.user.email ||
+                        (data.user.user_metadata && data.user.user_metadata.full_name) ||
+                        'Admin';
+                } else {
+                    adminNameEl.textContent = 'Admin';
+                }
+            } catch (err) {
+                adminNameEl.textContent = 'Admin';
+            }
+        }
+    })();
+
+    // ====== BOOTSTRAP ======
+    (async () => {
+        const user = await requireAuth();
+        if (!user) return; // sudah di-redirect
+
         await fetchProducts();
         await fetchOrders();
         renderProductTable();
@@ -601,7 +680,7 @@ function initAdmin() {
     })();
 }
 
-// Mulai inisialisasi
+// Mulai
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initAdmin);
 } else {
