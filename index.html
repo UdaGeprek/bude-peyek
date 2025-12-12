@@ -337,253 +337,216 @@
     </footer>
 
     <!-- Supabase SDK -->
-   <script>
-document.addEventListener('DOMContentLoaded', async () => {
-    if (typeof window.supabaseClient === 'undefined') {
-        console.error('❌ Supabase Client belum siap! Cek supabase-config.js');
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+
+<script>
+(function initShop() {
+  // Tunggu sampai supabaseClient dari supabase-config.js siap
+  if (typeof window.supabaseClient === 'undefined') {
+    console.log('⏳ Menunggu Supabase client...');
+    setTimeout(initShop, 150);
+    return;
+  }
+
+  const supabase    = window.supabaseClient;
+  const produkGrid  = document.getElementById('productGrid');
+  const produkSelect = document.getElementById('produkSelect'); // <- ID select di HTML
+  const orderForm   = document.querySelector('.order-form');
+
+  // === LOAD DATA PRODUK ===
+  async function loadProducts() {
+    try {
+      const { data: products, error } = await supabase
+        .from('products')
+        .select('*')              // TANPA .eq('status','active') lagi
+        .order('id', { ascending: true });
+
+      if (error) throw error;
+      if (!produkGrid) return;
+
+      // Bersihkan tampilan awal
+      produkGrid.innerHTML = '';
+      if (produkSelect) {
+        produkSelect.innerHTML = '<option value="">-- Pilih Produk --</option>';
+      }
+
+      if (!products || !products.length) {
+        produkGrid.innerHTML = `
+          <div style="grid-column:1/-1;text-align:center;padding:2rem;">
+            Belum ada produk.
+          </div>`;
         return;
-    }
-    const supabase = window.supabaseClient;
+      }
 
-    const produkGrid = document.getElementById('productGrid');
-    const produkSelect = document.getElementById('produk');
-    const orderForm = document.querySelector('.order-form');
-    const chatAdminBtn = document.getElementById('chatAdminBtn'); // kalau kamu tambahkan button ini
+      products.forEach(product => {
+        const stock   = product.stock ?? 0;
+        const isHabis = stock <= 0;
 
-    // --- LOAD DATA PRODUK (dengan stok sinkron) ---
-    async function loadProducts() {
-        try {
-            const { data: products, error } = await supabase
-                .from('products')
-                .select('*')
-                .order('id', { ascending: true });
+        // KARTU PRODUK
+        const card = document.createElement('div');
+        card.className = 'produk-card';
 
-            if (error) throw error;
-
-            // Bersihkan grid & select
-            produkGrid.innerHTML = '';
-            if (produkSelect) {
-                produkSelect.innerHTML = '<option value="">-- Pilih Produk --</option>';
-            }
-
-            if (!products || !products.length) {
-                produkGrid.innerHTML = `
-                    <div class="produk-empty">
-                        <i class="fas fa-box-open"></i>
-                        <p>Belum ada produk tersedia.</p>
-                    </div>`;
-                return;
-            }
-
-            products.forEach(product => {
-                const stock = product.stock ?? 0;
-                const isHabis = stock <= 0;
-
-                // ==== CARD PRODUK ====
-                const card = document.createElement('div');
-                card.className = 'produk-card';
-
-                let imgHTML = '';
-                if (product.image_url) {
-                    imgHTML = `
-                        <div class="produk-image">
-                            <img src="${product.image_url}" alt="${product.name}">
-                        </div>`;
-                } else {
-                    imgHTML = `
-                        <div class="produk-image">
-                            <i class="fas ${product.icon || 'fa-cookie-bite'}"></i>
-                        </div>`;
-                }
-
-                const badgeHTML = product.badge
-                    ? `<span class="produk-badge">${product.badge}</span>`
-                    : '';
-
-                const stokHTML = isHabis
-                    ? `<span class="stok-badge stok-habis">Stok Habis</span>`
-                    : `<span class="stok-badge stok-aman">Stok: ${stock}</span>`;
-
-                card.innerHTML = `
-                    ${imgHTML}
-                    <div class="produk-info">
-                        <div class="produk-header">
-                            <h3>${product.name}</h3>
-                            ${badgeHTML}
-                        </div>
-                        <p class="produk-deskripsi">${product.description || ''}</p>
-                        <div class="produk-meta">
-                            <span class="produk-harga">${new Intl.NumberFormat('id-ID', {
-                                style: 'currency',
-                                currency: 'IDR',
-                                minimumFractionDigits: 0
-                            }).format(product.price)}</span>
-                            ${stokHTML}
-                        </div>
-                        <div class="produk-actions">
-                            <button 
-                                type="button" 
-                                class="btn-pesan" 
-                                ${isHabis ? 'disabled' : ''}
-                                data-id="${product.id}"
-                                data-name="${product.name}"
-                                data-price="${product.price}"
-                                data-stock="${stock}"
-                            >
-                                ${isHabis ? 'Stok Habis' : 'Pesan Sekarang'}
-                            </button>
-                        </div>
-                    </div>
-                `;
-                produkGrid.appendChild(card);
-
-                // Klik "Pesan Sekarang" akan memilih produk di form
-                const pesanBtn = card.querySelector('.btn-pesan');
-                if (pesanBtn && produkSelect && !isHabis) {
-                    pesanBtn.addEventListener('click', () => {
-                        const value = product.id;
-                        produkSelect.value = String(value);
-                        // Trigger change kalau perlu
-                        produkSelect.dispatchEvent(new Event('change'));
-                        // Scroll ke form
-                        const section = document.querySelector('#pemesanan');
-                        if (section) section.scrollIntoView({ behavior: 'smooth' });
-                    });
-                }
-
-                // ==== OPTION DI SELECT FORM PEMESANAN ====
-                if (produkSelect && !isHabis) {
-                    const option = document.createElement('option');
-                    option.value = product.id;
-                    option.textContent = `${product.name} - ${new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
-                        minimumFractionDigits: 0
-                    }).format(product.price)} (Stok: ${stock})`;
-                    option.dataset.id = product.id;
-                    option.dataset.name = product.name;
-                    option.dataset.price = product.price;
-                    option.dataset.stock = stock;
-                    produkSelect.appendChild(option);
-                }
-            });
-        } catch (err) {
-            console.error('Error load produk:', err);
-            produkGrid.innerHTML = `
-                <div style="color:red;text-align:center;">
-                    Gagal memuat produk: ${err.message}
-                </div>`;
+        let imgHTML = '';
+        if (product.image_url) {
+          imgHTML = `
+            <div class="produk-image-photo">
+              <img src="${product.image_url}" alt="${product.name}">
+            </div>`;
+        } else {
+          imgHTML = `
+            <div class="produk-image">
+              <i class="fas ${product.icon || 'fa-cookie-bite'}"></i>
+            </div>`;
         }
+
+        const badgeHTML = product.badge
+          ? `<div class="produk-badge">${product.badge}</div>`
+          : '';
+
+        let stockHTML = '';
+        if (isHabis) {
+          stockHTML = `
+            <div class="stock-warning">
+              <i class="fas fa-exclamation-triangle"></i>
+              Stok habis untuk saat ini.
+            </div>`;
+        } else if (stock > 0 && stock <= 10) {
+          stockHTML = `
+            <div class="stock-warning">
+              <i class="fas fa-exclamation-circle"></i>
+              Stok terbatas (${stock} pack tersisa)
+            </div>`;
+        }
+
+        card.innerHTML = `
+          ${imgHTML}
+          ${badgeHTML}
+          <div class="produk-content">
+            <h3>${product.name}</h3>
+            <p>${product.description || 'Peyek renyah khas nusantara.'}</p>
+            <div class="produk-price">
+              <span class="price">
+                Rp ${Number(product.price || 0).toLocaleString('id-ID')}
+              </span>
+              <span class="unit">/ pack</span>
+            </div>
+          </div>
+          ${stockHTML}
+        `;
+
+        produkGrid.appendChild(card);
+
+        // ISI DROPDOWN FORM (hanya yang stok > 0)
+        if (produkSelect && !isHabis) {
+          const option = document.createElement('option');
+          option.value = product.id;
+          option.textContent =
+            `${product.name} - Rp ${Number(product.price || 0).toLocaleString('id-ID')} (Stok: ${stock})`;
+          option.dataset.id    = product.id;
+          option.dataset.name  = product.name;
+          option.dataset.price = product.price;
+          option.dataset.stock = stock;
+          produkSelect.appendChild(option);
+        }
+      });
+    } catch (err) {
+      console.error('Error load produk:', err);
+      if (produkGrid) {
+        produkGrid.innerHTML = `
+          <div style="color:red;text-align:center;padding:2rem;">
+            Gagal memuat produk: ${err.message}
+          </div>`;
+      }
     }
+  }
 
-    // --- SUBMIT FORM PEMESANAN ---
-    if (orderForm && produkSelect) {
-        orderForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+  // === SUBMIT FORM PEMESANAN ===
+  if (orderForm && produkSelect) {
+    orderForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-            const selectedOption = produkSelect.options[produkSelect.selectedIndex];
-            if (!selectedOption || produkSelect.value === "") {
-                alert('Pilih produk dulu!');
-                return;
-            }
+      const selectedOption = produkSelect.options[produkSelect.selectedIndex];
+      if (!selectedOption || !produkSelect.value) {
+        alert('Pilih produk dulu!');
+        return;
+      }
 
-            const formData = new FormData(orderForm);
-            const data = Object.fromEntries(formData);
+      const formData = new FormData(orderForm);
+      const data = Object.fromEntries(formData);
 
-            const productId = selectedOption.dataset.id;
-            const productName = selectedOption.dataset.name;
-            const productPrice = parseInt(selectedOption.dataset.price);
-            const stock = parseInt(selectedOption.dataset.stock ?? '0');
-            const qty = parseInt(data.jumlah || '0');
+      const productId    = selectedOption.dataset.id;
+      const productName  = selectedOption.dataset.name;
+      const productPrice = parseInt(selectedOption.dataset.price || '0', 10);
+      const stock        = parseInt(selectedOption.dataset.stock || '0', 10);
+      const qty          = parseInt(data.jumlah || '0', 10);
 
-            if (!qty || qty <= 0) {
-                alert('Jumlah pesanan harus lebih dari 0.');
-                return;
-            }
+      if (!qty || qty <= 0) {
+        alert('Jumlah pesanan harus lebih dari 0.');
+        return;
+      }
+      if (qty > stock) {
+        alert('Stok tidak mencukupi untuk jumlah pesanan ini.');
+        return;
+      }
 
-            // Cek stok sebelum buat pesanan
-            if (qty > stock) {
-                alert('Stok tidak mencukupi untuk jumlah pesanan ini.');
-                return;
-            }
+      const total = productPrice * qty;
 
-            const total = productPrice * qty;
+      try {
+        const { error } = await supabase.from('orders').insert([{
+          customer_name: data.nama,
+          phone:         data.telepon,
+          email:         data.email,
+          address:       data.alamat,
+          product_id:    productId,
+          product_name:  productName,
+          quantity:      qty,
+          total:         total,
+          notes:         data.catatan,
+          status:        'pending'
+        }]);
 
-            try {
-                const { error } = await supabase.from('orders').insert([{
-                    customer_name: data.nama,
-                    phone: data.telepon,
-                    email: data.email,
-                    address: data.alamat,
-                    product_id: productId,
-                    product_name: productName,
-                    quantity: qty,
-                    total: total,
-                    notes: data.catatan,
-                    status: 'pending'
-                }]);
+        if (error) throw error;
 
-                if (error) throw error;
+        // Kirim template ke WhatsApp admin
+        const waNumber = '6283169352889';
+        const waMsg =
+          `*ORDER BARU Bude Peyek*%0A%0A` +
+          `Nama: ${encodeURIComponent(data.nama)}%0A` +
+          `No. WA: ${encodeURIComponent(data.telepon)}%0A` +
+          `Produk: ${encodeURIComponent(productName)}%0A` +
+          `Jumlah: ${qty}%0A` +
+          `Total: Rp ${total.toLocaleString('id-ID')}%0A` +
+          `Alamat: ${encodeURIComponent(data.alamat || '-') }%0A%0A` +
+          `Catatan: ${encodeURIComponent(data.catatan || '-') }%0A%0A` +
+          `Terima kasih sudah memesan di Bude Peyek 🙏`;
 
-                // WhatsApp ke admin (template semi otomatis)
-                const waNumber = '6283169352889';
-                const waMsg =
-`*ORDER BARU Bude Peyek*%0A%0A` +
-`Nama: ${encodeURIComponent(data.nama)}%0A` +
-`No. WA: ${encodeURIComponent(data.telepon)}%0A` +
-`Produk: ${encodeURIComponent(productName)}%0A` +
-`Jumlah: ${qty}%0A` +
-`Total: Rp ${total.toLocaleString('id-ID')}%0A` +
-`Alamat: ${encodeURIComponent(data.alamat || '-')}%0A%0A` +
-`Catatan: ${encodeURIComponent(data.catatan || '-')}%0A%0A` +
-`Terima kasih sudah memesan di Bude Peyek 🙏`;
+        window.open(`https://wa.me/${waNumber}?text=${waMsg}`, '_blank');
 
-                window.open(`https://wa.me/${waNumber}?text=${waMsg}`, '_blank');
+        alert('Pesanan berhasil dibuat! Admin akan menghubungi via WhatsApp.');
+        orderForm.reset();
+      } catch (err) {
+        console.error('Error simpan pesanan:', err);
+        alert('Gagal membuat pesanan: ' + err.message);
+      }
+    });
+  }
 
-                alert('Pesanan berhasil dibuat! Admin akan menghubungi via WhatsApp.');
-                orderForm.reset();
-            } catch (err) {
-                console.error('Error simpan pesanan:', err);
-                alert('Gagal membuat pesanan: ' + err.message);
-            }
-        });
-    }
+  // Navbar mobile
+  const hamburger = document.querySelector('.hamburger');
+  const navMenu   = document.querySelector('.nav-menu');
+  if (hamburger && navMenu) {
+    hamburger.addEventListener('click', () => {
+      hamburger.classList.toggle('active');
+      navMenu.classList.toggle('active');
+    });
+  }
 
-    // --- (OPSIONAL) TOMBOL "CHAT ADMIN VIA WHATSAPP" DI HALAMAN PELANGGAN ---
-    // Tambahkan di HTML:
-    // <button type="button" id="chatAdminBtn" class="btn-wa-secondary">
-    //   <i class="fab fa-whatsapp"></i> Chat Admin via WhatsApp
-    // </button>
-    if (chatAdminBtn && produkSelect) {
-        chatAdminBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-
-            const selectedOption = produkSelect.options[produkSelect.selectedIndex];
-            const productName = selectedOption ? selectedOption.dataset.name : 'produk Bude Peyek';
-            const qtyInput = document.querySelector('input[name="jumlah"]');
-            const qty = qtyInput ? (qtyInput.value || '1') : '1';
-
-            const msg = `Halo Kak, saya ingin konfirmasi pesanan ${productName} sebanyak ${qty}.`;
-            const waNumber = '6283169352889';
-            window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, '_blank');
-        });
-    }
-
-    // --- INIT ---
-    loadProducts();
-
-    // Navbar Mobile
-    const hamburger = document.querySelector('.hamburger');
-    const navMenu = document.querySelector('.nav-menu');
-    if (hamburger && navMenu) {
-        hamburger.addEventListener('click', () => {
-            hamburger.classList.toggle('active');
-            navMenu.classList.toggle('active');
-        });
-    }
-});
+  loadProducts();
+})();
 </script>
 
 </body>
 </html>
+
 
