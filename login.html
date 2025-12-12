@@ -22,14 +22,14 @@
             <form id="loginForm" class="login-form">
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle"></i>
-                    <span>Login menggunakan akun admin yang sudah dibuat di Supabase Auth.</span>
+                    <span>Gunakan akun admin yang sudah dibuat di Supabase Auth.</span>
                 </div>
 
                 <div class="form-group">
                     <label for="username">
-                        <i class="fas fa-user"></i> Email / Username
+                        <i class="fas fa-user"></i> Email
                     </label>
-                    <input type="text" id="username" name="username" required autofocus>
+                    <input type="email" id="username" name="username" required autofocus>
                 </div>
 
                 <div class="form-group">
@@ -86,7 +86,7 @@
             }
 
             if (!window.supabaseClient) {
-                console.error('Supabase client belum siap. Periksa supabase-config.js');
+                console.error('Supabase client belum siap. Cek supabase-config.js.');
                 return;
             }
 
@@ -102,10 +102,9 @@
                 if (rememberMeCheckbox) rememberMeCheckbox.checked = true;
             }
 
-            // Login form handler (Supabase Auth)
             const loginForm = document.getElementById('loginForm');
             if (loginForm) {
-                loginForm.addEventListener('submit', async function(e) {
+                loginForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
 
                     const email = document.getElementById('username').value.trim();
@@ -113,7 +112,7 @@
                     const rememberMe = document.getElementById('rememberMe').checked;
 
                     if (!email || !password) {
-                        alert('Email/username dan password wajib diisi!');
+                        alert('Email dan password wajib diisi!');
                         return;
                     }
 
@@ -128,10 +127,6 @@
                             alert('Email atau password salah!');
                             return;
                         }
-
-                        // Simpan sedikit info di sessionStorage jika mau dipakai di UI
-                        sessionStorage.setItem('adminLoggedIn', 'true');
-                        sessionStorage.setItem('adminUsername', email);
 
                         if (rememberMe) {
                             localStorage.setItem('rememberAdmin', 'true');
@@ -150,18 +145,9 @@
                 });
             }
 
-            // Jika sudah login (masih ada sesi Supabase), langsung redirect ke admin
-            (async () => {
-                try {
-                    const { data, error } = await supabase.auth.getUser();
-                    if (!error && data && data.user) {
-                        console.log('Sudah login sebagai', data.user.email);
-                        window.location.href = 'admin.html';
-                    }
-                } catch (err) {
-                    console.error('Gagal cek sesi login:', err);
-                }
-            })();
+            // ⚠️ PENTING:
+            // Tidak ada auto-redirect login → admin di sini,
+            // supaya tidak terjadi loop dengan admin.html.
         });
     </script>
 </body>
